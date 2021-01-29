@@ -10,83 +10,36 @@ namespace CodeAnalyzer
     {
         List<File> processedFiles;
         List<Class> classes;
+
+        public CodeAnalysisData()
+        {
+            this.processedFiles = new List<File>();
+            this.classes = new List<Class>();
+        }
     }
 
     public class InputSessionData
     {
+        private Queue<string> fileQueue; // full file paths
+        public bool includeSubdirectories { get; set; }
+        public bool setRelationshipData { get; set; }
+        public bool printToXml { get; set; }
+        public string directoryPath { get; set; }
 
-        private bool includeSubdirectories;
-        private bool includeRelationships;
-        private bool printToXml;
-        private string directoryPath;
-        private Queue<File> fileQueue;
-
-        // returns true if successful
-        // returns false if invalid arguments
-        public bool SetSessionData(string[] args)
+        public InputSessionData()
         {
-            
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Needs more command line arguments.");
-                return false;
-            }
-
+            this.fileQueue = new Queue<string>();
             this.includeSubdirectories = false;
-            this.includeRelationships = false;
+            this.setRelationshipData = false;
             this.printToXml = false;
-            this.directoryPath = null;
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (!DetectArgument(args[i]))
-                {
-                    return false;
-                }
-            }
-
-            if (this.directoryPath == null)
-            {
-                Console.WriteLine("No valid directory or file path detected.");
-                return false;
-            }
-
-            return true;
         }
 
-        // returns false if invalid argument
-        // sets appropriate field and returns true otherwise
-        private bool DetectArgument(string arg)
+        public void SetData(string[] input)
         {
-            if (arg.ToLower().Equals("/s") && !this.includeSubdirectories)
-            {
-                return (this.includeSubdirectories = true);
-            }
-
-            if (arg.ToLower().Equals("/r") && !this.includeRelationships)
-            {
-                return (this.includeRelationships = true);
-            }
-
-            if (arg.ToLower().Equals("/x") && !this.printToXml)
-            {
-                return (this.printToXml = true);
-            }
-
-            // TODO: check filepath & set directoryPath
-
-            Console.WriteLine("Invalid argument.");
-            return false;
+            if (input[0].Equals("/S")) this.includeSubdirectories = true;
+            if (input[1].Equals("/R")) this.setRelationshipData = true;
+            if (input[2].Equals("/X")) this.printToXml = true;
+            this.directoryPath = input[3];
         }
-
-        // TODO
-        // returns false if there are no .cs files in the filepath
-        // returns true otherwise
-        public bool EnqueueFiles()
-        {
-
-            return false;
-        }
-
     }
 }
