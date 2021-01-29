@@ -13,19 +13,24 @@ namespace CodeAnalyzer
      * CodeAnalyzer.exe [args]
      */
 
-    static class MainControl
+    static class Launcher
     {
         static void Main(string[] args)
         {
-            if (SessionData.SetSessionData(args)) // arguments are valid and set
-            {
+            //if (InputSessionData.SetSessionData(args)) // arguments are valid and set
+            //{
                 Console.WriteLine("Analyzing your C# files...");
                 /* TODO:
                  * Until fileQueue is empty, grab a file from it & process the file
                  */
-            }
+            //}
 
         }
+    }
 
+    public class ProgramExecutor
+    {
+        private InputSessionData inputSessionData;
+        private CodeAnalysisData codeAnalysisData;
     }
 }

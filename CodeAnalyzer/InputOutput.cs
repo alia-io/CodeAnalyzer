@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {
-    class CodeAnalysisData
+    class InputReader
     {
-        List<File> processedFiles;
-        List<Class> classes;
+    }
+
+    class OutputWriter
+    {
+
     }
 }

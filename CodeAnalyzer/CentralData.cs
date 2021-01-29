@@ -6,18 +6,24 @@ using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {
-    static class SessionData
+    class CodeAnalysisData
+    {
+        List<File> processedFiles;
+        List<Class> classes;
+    }
+
+    public class InputSessionData
     {
 
-        private static bool includeSubdirectories;
-        private static bool includeRelationships;
-        private static bool printToXml;
-        private static string directoryPath;
-        private static Queue<File> fileQueue;
+        private bool includeSubdirectories;
+        private bool includeRelationships;
+        private bool printToXml;
+        private string directoryPath;
+        private Queue<File> fileQueue;
 
         // returns true if successful
         // returns false if invalid arguments
-        public static bool SetSessionData(string[] args)
+        public bool SetSessionData(string[] args)
         {
             
             if (args.Length < 1)
@@ -26,10 +32,10 @@ namespace CodeAnalyzer
                 return false;
             }
 
-            includeSubdirectories = false;
-            includeRelationships = false;
-            printToXml = false;
-            directoryPath = null;
+            this.includeSubdirectories = false;
+            this.includeRelationships = false;
+            this.printToXml = false;
+            this.directoryPath = null;
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -39,7 +45,7 @@ namespace CodeAnalyzer
                 }
             }
 
-            if (directoryPath == null)
+            if (this.directoryPath == null)
             {
                 Console.WriteLine("No valid directory or file path detected.");
                 return false;
@@ -50,21 +56,21 @@ namespace CodeAnalyzer
 
         // returns false if invalid argument
         // sets appropriate field and returns true otherwise
-        private static bool DetectArgument(string arg)
+        private bool DetectArgument(string arg)
         {
-            if (arg.ToLower().Equals("/s") && !includeSubdirectories)
+            if (arg.ToLower().Equals("/s") && !this.includeSubdirectories)
             {
-                return (includeSubdirectories = true);
+                return (this.includeSubdirectories = true);
             }
 
-            if (arg.ToLower().Equals("/r") && !includeRelationships)
+            if (arg.ToLower().Equals("/r") && !this.includeRelationships)
             {
-                return (includeRelationships = true);
+                return (this.includeRelationships = true);
             }
 
-            if (arg.ToLower().Equals("/x") && !printToXml)
+            if (arg.ToLower().Equals("/x") && !this.printToXml)
             {
-                return (printToXml = true);
+                return (this.printToXml = true);
             }
 
             // TODO: check filepath & set directoryPath
@@ -76,7 +82,7 @@ namespace CodeAnalyzer
         // TODO
         // returns false if there are no .cs files in the filepath
         // returns true otherwise
-        public static bool EnqueueFiles()
+        public bool EnqueueFiles()
         {
 
             return false;
