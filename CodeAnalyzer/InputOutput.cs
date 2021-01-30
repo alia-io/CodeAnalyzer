@@ -30,6 +30,13 @@ namespace CodeAnalyzer
                 return false;
             }
 
+            this.ErrorMessage = "\nArguments must include a valid directory path." +
+                "\nPaths with spaces must be surrounded by quotation marks." +
+                "\nAdditional arguments are optional. Valid arguments include:" +
+                "\n\t/S - inlude subdirectories" +
+                "\n\t/R - analyze relationship data" +
+                "\n\t/X - print data to XML document";
+
             for (int i = 0; i < args.Length; i++)
             {
                 if (!this.SetInputField(args[i]))
@@ -53,7 +60,6 @@ namespace CodeAnalyzer
                     this.FormattedInput[0] = "/S";
                     return true;
                 }
-                this.ErrorMessage = "Unexpected argument(s).";
                 return false;
             }
 
@@ -64,7 +70,6 @@ namespace CodeAnalyzer
                     this.FormattedInput[1] = "/R";
                     return true;
                 }
-                this.ErrorMessage = "Unexpected argument(s).";
                 return false;
             }
 
@@ -75,7 +80,6 @@ namespace CodeAnalyzer
                     this.FormattedInput[2] = "/X";
                     return true;
                 }
-                this.ErrorMessage = "Unexpected argument(s).";
                 return false;
             }
 
@@ -94,7 +98,7 @@ namespace CodeAnalyzer
             }
             catch (Exception)
             {
-                this.ErrorMessage = "Invalid directory path.";
+                return false;
             }
 
             if (Directory.Exists(directoryPath))
@@ -104,11 +108,9 @@ namespace CodeAnalyzer
                     this.FormattedInput[3] = directoryPath;
                     return true;
                 }
-                this.ErrorMessage = "Unexpected argument(s).";
                 return false;
             }
 
-            this.ErrorMessage = "Invalid directory path.\nPaths with spaces must be surrounded by quotation marks.";
             return false;
         }
     }
