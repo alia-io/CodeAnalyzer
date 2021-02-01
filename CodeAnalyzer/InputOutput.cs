@@ -117,6 +117,52 @@ namespace CodeAnalyzer
 
     class OutputWriter
     {
+        private int tabs = 0;
+
+        public void PrintToStandardOutput(List<ProgramFile> processedFileList, bool printRelationshipData)
+        {
+            foreach (ProgramFile programFile in processedFileList)
+            {
+                this.NavigateProgramTypes_StdOut(programFile, printRelationshipData);
+            }
+        }
+
+        public void PrintToFile(List<ProgramFile> processedFileList, bool printRelationshipData)
+        {
+
+        }
+
+        private void NavigateProgramTypes_StdOut(ProgramType programType, bool printRelationshipData)
+        {
+            Console.Write("\n");
+            for (int i = 0; i < tabs; i++)
+                Console.Write("\t");
+
+            /* ---------- Print out the programType information ---------- */
+            if (programType.GetType() == typeof(ProgramFile))
+            {
+                Console.WriteLine("\nFile: " + programType.Name);
+            }
+            else if (programType.GetType() == typeof(ProgramNamespace))
+            {
+                Console.WriteLine("Namespace: " + programType.Name);
+            }
+            else if (programType.GetType() == typeof(ProgramClass))
+            {
+                Console.WriteLine("Class: " + programType.Name);
+            }
+
+            /* ---------- Repeat with child data ---------- */
+            if (programType.ChildList.Count > 0)
+            {
+                tabs++;
+                foreach (ProgramType child in programType.ChildList)
+                {
+                    this.NavigateProgramTypes_StdOut(child, printRelationshipData);
+                }
+                tabs--;
+            }
+        }
 
     }
 }

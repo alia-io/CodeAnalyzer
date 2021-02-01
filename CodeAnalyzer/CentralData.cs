@@ -9,27 +9,33 @@ namespace CodeAnalyzer
 {
     class CodeAnalysisData
     {
-        public List<File> ProcessedFiles { get; }
-        public ProgramTypeCollection Classes { get; }
+        public List<ProgramFile> ProcessedFiles { get; }
+        public ProgramObjectTypeCollection ProgramObjectTypes { get; }
 
         public CodeAnalysisData()
         {
-            this.ProcessedFiles = new List<File>();
-            this.Classes = new ProgramTypeCollection();
+            this.ProcessedFiles = new List<ProgramFile>();
+            this.ProgramObjectTypes = new ProgramObjectTypeCollection();
         }
+
+        public void AddFile(ProgramFile file) { this.ProcessedFiles.Add(file); }
+        public void AddObject(ProgramClass programClass) { this.ProgramObjectTypes.Add(programClass); }
+        public void AddObject(ProgramInterface programInterface) { this.ProgramObjectTypes.Add(programInterface); }
+        public void AddObject(ProgramStruct programStruct) { this.ProgramObjectTypes.Add(programStruct); }
+        public void AddObject(ProgramEnum programEnum) { this.ProgramObjectTypes.Add(programEnum); }
     }
 
     public class InputSessionData
     {
         public string DirectoryPath { get; set; }
-        public Queue<string> FileQueue { get; set; } // file paths
+        public Queue<ProgramFile> FileQueue { get; set; }
         public bool IncludeSubdirectories { get; set; }
         public bool SetRelationshipData { get; set; }
         public bool PrintToXml { get; set; }
 
         public InputSessionData()
         {
-            this.FileQueue = new Queue<string>();
+            this.FileQueue = new Queue<ProgramFile>();
             this.IncludeSubdirectories = false;
             this.SetRelationshipData = false;
             this.PrintToXml = false;
@@ -37,8 +43,6 @@ namespace CodeAnalyzer
 
         public void SetInputSessionData(string[] input)
         {
-            string[] filePaths;
-
             this.DirectoryPath = input[3];
 
             if (input[0].Equals("/S"))
@@ -55,6 +59,11 @@ namespace CodeAnalyzer
             {
                 this.PrintToXml = true;
             }
+        }
+
+        public void EnqueueFiles()
+        {
+            string[] filePaths;
 
             if (this.IncludeSubdirectories)
             {
@@ -67,7 +76,9 @@ namespace CodeAnalyzer
 
             foreach (string filePath in filePaths)
             {
-                FileQueue.Enqueue(filePath);
+                string[] filePathArray = filePath.Split('/');
+                string fileName = filePathArray[filePathArray.Length - 1];
+                this.FileQueue.Enqueue(new ProgramFile(filePath, fileName, File.ReadAllText(filePath)));
             }
         }
     }

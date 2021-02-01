@@ -25,8 +25,8 @@ namespace CodeAnalyzer
 
     public class ProgramExecutor
     {
-        private InputSessionData inputSessionData;
-        private CodeAnalysisData codeAnalysisData;
+        private readonly InputSessionData inputSessionData;
+        private readonly CodeAnalysisData codeAnalysisData;
 
         public ProgramExecutor()
         {
@@ -48,42 +48,44 @@ namespace CodeAnalyzer
             }
 
             // set the session data - /S, /R, /X options and directory path
-            // TODO: maybe add a new thread here to enqueue files?
             this.inputSessionData.SetInputSessionData(inputReader.FormattedInput);
 
-            /* Debugging 
-            Console.WriteLine("\n---------- Input Session Data ----------" +
-                "\nIncluding Subdirectories: " + this.inputSessionData.includeSubdirectories +
-                "\nIncluding Relationships: " + this.inputSessionData.setRelationshipData +
-                "\nPrint to XML: " + this.inputSessionData.printToXml +
-                "\nDirectory Path: " + this.inputSessionData.directoryPath +
-                "\n\nFiles in Queue:");
-            foreach (string filePath in this.inputSessionData.fileQueue)
-            {
-                Console.WriteLine("\n    " + filePath);
-            }
-             End of debugging */
+            // create and read all the files, and enqueue them on the FileQueue
+            this.inputSessionData.EnqueueFiles();
 
             /* -------------------- Reading and Analyzing the Files -------------------- */
 
-            //while (this.inputSessionData.FileQueue.Count > 0)
-            //{
+            while (this.inputSessionData.FileQueue.Count > 0)
+            {
                 FileProcessor fileProcessor = new FileProcessor();
-                fileProcessor.ProcessFile(this.inputSessionData.FileQueue.Dequeue(), this.inputSessionData.SetRelationshipData);
-                this.codeAnalysisData.ProcessedFiles.Add(fileProcessor.FileData);
-                foreach (Class programClass in fileProcessor.ClassList)
-                {
-                    this.codeAnalysisData.Classes.Add(programClass);
-                }
-            //}
+                fileProcessor.ProcessFile(this.codeAnalysisData, this.inputSessionData.FileQueue.Dequeue(), this.inputSessionData.SetRelationshipData);
+            }
 
-            /* Test */
+            /* test 
+            Console.Write("\n|");
+            foreach (string text in codeAnalysisData.ProcessedFiles[0].FileTextData)
+            {
+                Console.Write(" " + text + " |");
+            }
+            Console.Write("\n\n\n");
+            /* end of test */
 
+            /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
+            if (this.inputSessionData.SetRelationshipData)
+            {
+                // TODO ......
+            }
 
-
-            /* End of test */
-
-
+            /* -------------------- Printing the Output Data -------------------- */
+            OutputWriter outputWriter = new OutputWriter();
+            if (this.inputSessionData.PrintToXml)
+            {
+                outputWriter.PrintToFile(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);
+            }
+            else
+            {
+                outputWriter.PrintToStandardOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);
+            }
         }
 
     }
