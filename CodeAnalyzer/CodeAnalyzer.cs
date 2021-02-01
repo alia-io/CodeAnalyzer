@@ -310,6 +310,7 @@ namespace CodeAnalyzer
 
                     foreach (string text in possibleFunction)
                     {
+                        if (text.Length < 1) continue;
                         switch (nextRequirement)
                         {
                             case 0:
