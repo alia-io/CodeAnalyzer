@@ -69,22 +69,26 @@ namespace CodeAnalyzer
     }
 
     public class ProgramClass : ProgramObjectType { public ProgramClass(string name, string modifiers) : base(name, modifiers) { } }
-    public class ProgramInterface : ProgramObjectType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
-    public class ProgramStruct : ProgramObjectType { public ProgramStruct(string name, string modifiers) : base(name, modifiers) { } }
-    public class ProgramEnum : ProgramObjectType { public ProgramEnum(string name, string modifiers) : base(name, modifiers) { } }
+    //public class ProgramInterface : ProgramObjectType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
+    //public class ProgramStruct : ProgramObjectType { public ProgramStruct(string name, string modifiers) : base(name, modifiers) { } }
+    //public class ProgramEnum : ProgramObjectType { public ProgramEnum(string name, string modifiers) : base(name, modifiers) { } }
 
     public class ProgramFunction : ProgramType
     {
         public string Modifiers { get; set; }
         public string ReturnType { get; set; }
         public string Parameters { get; set; }
+        public string BaseParameters { get; set; }
         public int Size { get; set; }
         public int Complexity { get; set; }
-        public ProgramFunction(string name, string modifiers, string returnType, string parameters) : base(name) 
+        public ProgramFunction(string name, string modifiers, string returnType, string parameters, string baseParameters) : base(name)
         {
             this.Modifiers = modifiers;
             this.ReturnType = returnType;
             this.Parameters = parameters;
+            this.BaseParameters = baseParameters;
+            this.Size = 0;
+            this.Complexity = 0;
         }
     }
 

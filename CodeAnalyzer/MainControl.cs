@@ -12,6 +12,13 @@ namespace CodeAnalyzer
      * Tools > Command Line > Developer Command Prompt
      * csc /target:exe /out:CodeAnalyzer.exe *.cs
      * CodeAnalyzer.exe [args]
+     * 
+     * .bat files: create 2 text files
+     * compile.bat : 
+     * (search for devenv in VS's location)
+     * devenv [path to sln] /build debug .compile
+     * run.bat: 
+     * .\Debug\Project2.exe [flags]
      */
 
     class Launcher

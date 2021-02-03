@@ -20,9 +20,10 @@ namespace CodeAnalyzer
 
         public void AddFile(ProgramFile file) { this.ProcessedFiles.Add(file); }
         public void AddObject(ProgramClass programClass) { this.ProgramObjectTypes.Add(programClass); }
-        public void AddObject(ProgramInterface programInterface) { this.ProgramObjectTypes.Add(programInterface); }
-        public void AddObject(ProgramStruct programStruct) { this.ProgramObjectTypes.Add(programStruct); }
-        public void AddObject(ProgramEnum programEnum) { this.ProgramObjectTypes.Add(programEnum); }
+
+        //public void AddObject(ProgramInterface programInterface) { this.ProgramObjectTypes.Add(programInterface); }
+        //public void AddObject(ProgramStruct programStruct) { this.ProgramObjectTypes.Add(programStruct); }
+        //public void AddObject(ProgramEnum programEnum) { this.ProgramObjectTypes.Add(programEnum); }
     }
 
     public class InputSessionData
