@@ -68,15 +68,6 @@ namespace CodeAnalyzer
                 fileProcessor.ProcessFile(this.codeAnalysisData, this.inputSessionData.FileQueue.Dequeue(), this.inputSessionData.SetRelationshipData);
             }
 
-            /* test 
-            Console.Write("\n|");
-            foreach (string text in codeAnalysisData.ProcessedFiles[0].FileTextData)
-            {
-                Console.Write(" " + text + " |");
-            }
-            Console.Write("\n\n\n");
-            /* end of test */
-
             /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
             if (this.inputSessionData.SetRelationshipData)
             {

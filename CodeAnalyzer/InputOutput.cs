@@ -134,14 +134,17 @@ namespace CodeAnalyzer
 
         private void NavigateProgramTypes_StdOut(ProgramType programType, bool printRelationshipData)
         {
-            Console.Write("\n");
+            Console.Write("\n\n");
             for (int i = 0; i < tabs; i++)
                 Console.Write("\t");
 
             /* ---------- Print out the programType information ---------- */
             if (programType.GetType() == typeof(ProgramFile))
             {
-                Console.WriteLine("\nFile: " + programType.Name);
+                Console.WriteLine("File: " + programType.Name);
+                for (int i = 0; i < tabs; i++)
+                    Console.Write("\t");
+                Console.Write("\t- FilePath: " + ((ProgramFile)programType).FilePath);
             }
             else if (programType.GetType() == typeof(ProgramNamespace))
             {
@@ -150,6 +153,28 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramClass))
             {
                 Console.WriteLine("Class: " + programType.Name);
+                for (int i = 0; i < tabs; i++)
+                    Console.Write("\t");
+                Console.Write("\t- Modifiers: " + ((ProgramClass)programType).Modifiers);
+            }
+            else if (programType.GetType() == typeof(ProgramFunction))
+            {
+                Console.WriteLine("Function: " + programType.Name);
+                for (int i = 0; i < tabs; i++)
+                    Console.Write("\t");
+                Console.Write("\t- Signature: " + ((ProgramFunction)programType).Modifiers 
+                    + " " + ((ProgramFunction)programType).ReturnType 
+                    + " " + programType.Name
+                    + ((ProgramFunction)programType).Parameters
+                    + " " + ((ProgramFunction)programType).BaseParameters);
+                Console.Write("\n");
+                for (int i = 0; i < tabs; i++)
+                    Console.Write("\t");
+                Console.Write("\t- Size: " + ((ProgramFunction)programType).Size);
+                Console.Write("\n");
+                for (int i = 0; i < tabs; i++)
+                    Console.Write("\t");
+                Console.Write("\t- Complexity: " + ((ProgramFunction)programType).Complexity);
             }
 
             /* ---------- Repeat with child data ---------- */

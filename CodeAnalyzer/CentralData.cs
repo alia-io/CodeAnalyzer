@@ -62,6 +62,7 @@ namespace CodeAnalyzer
             }
         }
 
+        // TODO: support /P *.txt and /P *.cs
         public void EnqueueFiles()
         {
             string[] filePaths;
@@ -77,7 +78,7 @@ namespace CodeAnalyzer
 
             foreach (string filePath in filePaths)
             {
-                string[] filePathArray = filePath.Split('/');
+                string[] filePathArray = filePath.Split('\\');
                 string fileName = filePathArray[filePathArray.Length - 1];
                 this.FileQueue.Enqueue(new ProgramFile(filePath, fileName, File.ReadAllText(filePath)));
             }

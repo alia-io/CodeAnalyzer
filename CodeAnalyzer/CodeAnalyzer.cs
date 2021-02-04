@@ -28,8 +28,10 @@ namespace CodeAnalyzer
         int forScope = 0;       // [0-1]: "for", [1-2]: "(", [2-3]: word(s), [3-4]: ";", [4-5]: word(s), [5-6]: ";", [6-7]: word(s), [7-8]: ")", [8-0]: "{" or bracketless
         int forEachScope = 0;   // [0-1]: "foreach", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless
         int whileScope = 0;     // [0-1]: "while", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless NOT ";"
-        int doWhileScope = 0;        // [0-1]: "do", [1-0]: "{" or bracketless
+        int doWhileScope = 0;   // [0-1]: "do", [1-0]: "{" or bracketless
         int switchScope = 0;    // [0-1]: "switch", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{"
+
+        int savedScopeStackCount = 0;
 
         public void ProcessFile(CodeAnalysisData codeAnalysisData, ProgramFile programFile, bool populateObjectList)
         {
@@ -244,7 +246,7 @@ namespace CodeAnalyzer
                 {
                     if (this.CheckIfFunction()) // valid function or method syntax
                     {
-                        index = this.ProcessFunctionData(entry, index);
+                        index = this.ProcessFunctionData(entry, ++index);
                         continue;
                     }
                     else /* ---------- Other type of open brace ---------- */
@@ -285,6 +287,16 @@ namespace CodeAnalyzer
                 if (!populateObjectList && entry.Equals(" ") && typeStack.Peek().GetType() == typeof(ProgramFunction))
                     ((ProgramFunction)typeStack.Peek()).Size++;
 
+                /* ---------- Check for closing parenthesis ---------- */
+                if (entry.Equals(")"))
+                    if (scopeStack.Count > 0)
+                        if (scopeStack.Peek().Equals("("))
+                            scopeStack.Pop();
+
+                /* ---------- Check for open parenthesis ---------- */
+                if (entry.Equals("("))
+                    scopeStack.Push("(");
+
                 /* ---------- Check for the end of an existing bracketed scope ---------- */
                 if (entry.Equals("}"))
                 {
@@ -309,6 +321,7 @@ namespace CodeAnalyzer
                         else if (!scopeStack.Peek().Equals("{")) // ending another named scope
                             scopeStack.Pop();
                     }
+                    stringBuilder.Clear();
                     continue;
                 }
 
@@ -354,7 +367,7 @@ namespace CodeAnalyzer
                     /* ---------- Check if a new function is being started ---------- */
                     if (!scopeOpener && this.CheckIfFunction())
                     {
-                        index = this.ProcessFunctionData(entry, index);
+                        index = this.ProcessFunctionData(entry, ++index);
                         continue;
                     }
                     else /* ---------- Other type of open bracket ---------- */
@@ -448,7 +461,7 @@ namespace CodeAnalyzer
 
             typeStack.Push(programClass); // push the class onto typeStack
 
-            return this.ProcessObjectTypeData(entry, index); // reads the rest of the class
+            return this.ProcessObjectTypeData(entry, ++index); // reads the rest of the class
         }
 
         /* Used to detect the syntax for a function signature */
@@ -518,14 +531,9 @@ namespace CodeAnalyzer
                             functionRequirement = 4;
                             break;
                         }
-                        if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0]))
-                            || ((char)text[0]).Equals('_') || text.Equals(','))
-                        {
-                            if (!parameters[parameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
-                            parameters += text;
-                            break;
-                        }
-                        return false;  // failed function syntax
+                        if (!parameters[parameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
+                        parameters += text;
+                        break;
                     case 4:
                         if (text.Equals(" ")) continue;
                         if (this.CheckIfConstructor(functionIdentifier, functionRequirement, modifiers, returnType, name, parameters, baseParameters, i))
@@ -623,6 +631,7 @@ namespace CodeAnalyzer
         }
 
         /* Used to detect the syntax for a Constructor function */
+        // TODO: redo to check for a single-word Constructor function
         private bool CheckIfConstructor(string[] functionIdentifier, int functionRequirement, string modifiers, string returnType, string name, string parameters, string baseParameters, int index)
         {
             // [4]: name == ClassName, [5]: colon, [6]: "base" keyword, [7]: open paranthesis, (Optional: parameters), [8]: close parenthesis
@@ -675,14 +684,9 @@ namespace CodeAnalyzer
                             functionRequirement = 9;
                             break;
                         }
-                        if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0]))
-                            || ((char)text[0]).Equals('_') || text.Equals(','))
-                        {
-                            if (!baseParameters[baseParameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
-                            baseParameters += text;
-                            break;
-                        }
-                        return false; // failed constructor syntax
+                        if (!baseParameters[baseParameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
+                        baseParameters += text;
+                        break;
                     case 9:
                         if (text.Equals(" ")) continue;
                         return false;
@@ -718,7 +722,11 @@ namespace CodeAnalyzer
             switch (ifScope)
             {
                 case 0:
-                    if (entry.Equals("if") && elseIfScope == 0) ifScope = 1;
+                    if (entry.Equals("if") && elseIfScope == 0)
+                    {
+                        ifScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("(")) ifScope = 2;
@@ -728,7 +736,7 @@ namespace CodeAnalyzer
                     ifScope = 3;
                     break;
                 case 3:
-                    if (entry.Equals(")")) ifScope = 4;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) ifScope = 4;
                     break;
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
@@ -745,7 +753,11 @@ namespace CodeAnalyzer
             switch (elseIfScope)
             {
                 case 0:
-                    if (entry.Equals("else")) elseIfScope = 1;
+                    if (entry.Equals("else"))
+                    {
+                        elseIfScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("if")) elseIfScope = 2;
@@ -759,7 +771,7 @@ namespace CodeAnalyzer
                     elseIfScope = 4;
                     break;
                 case 4:
-                    if (entry.Equals(")")) elseIfScope = 5;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) elseIfScope = 5;
                     break;
                 case 5:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
@@ -798,7 +810,11 @@ namespace CodeAnalyzer
             switch (forScope)
             {
                 case 0:
-                    if (entry.Equals("for")) forScope = 1;
+                    if (entry.Equals("for"))
+                    {
+                        forScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("(")) forScope = 2;
@@ -820,7 +836,7 @@ namespace CodeAnalyzer
                     forScope = 7;
                     break;
                 case 7:
-                    if (entry.Equals(")")) forScope = 8;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forScope = 8;
                     break;
                 case 8:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
@@ -837,7 +853,11 @@ namespace CodeAnalyzer
             switch (forEachScope)
             {
                 case 0:
-                    if (entry.Equals("foreach")) forEachScope = 1;
+                    if (entry.Equals("foreach"))
+                    {
+                        forEachScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("(")) forEachScope = 2;
@@ -847,7 +867,7 @@ namespace CodeAnalyzer
                     forEachScope = 3;
                     break;
                 case 3:
-                    if (entry.Equals(")")) forEachScope = 4;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forEachScope = 4;
                     break;
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
@@ -864,7 +884,11 @@ namespace CodeAnalyzer
             switch (whileScope)
             {
                 case 0:
-                    if (entry.Equals("while")) whileScope = 1;
+                    if (entry.Equals("while"))
+                    {
+                        whileScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("(")) whileScope = 2;
@@ -874,7 +898,7 @@ namespace CodeAnalyzer
                     whileScope = 3;
                     break;
                 case 3:
-                    if (entry.Equals(")")) whileScope = 4;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) whileScope = 4;
                     break;
                 case 4:
                     if (entry.Equals(";"))
@@ -913,7 +937,11 @@ namespace CodeAnalyzer
             switch (switchScope)
             {
                 case 0:
-                    if (entry.Equals("switch")) switchScope = 1;
+                    if (entry.Equals("switch"))
+                    {
+                        switchScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     break;
                 case 1:
                     if (entry.Equals("(")) switchScope = 2;
@@ -923,7 +951,7 @@ namespace CodeAnalyzer
                     switchScope = 3;
                     break;
                 case 3:
-                    if (entry.Equals(")")) switchScope = 4;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) switchScope = 4;
                     break;
                 case 4:
                     if (!entry.Equals("{"))
@@ -958,7 +986,11 @@ namespace CodeAnalyzer
                 }
                 if (scopeStack.Peek().Equals("//"))
                 {
-                    if (entry.Equals(" ")) scopeStack.Pop();
+                    if (entry.Equals(" "))
+                    {
+                        scopeStack.Pop();
+                        return false;
+                    }
                     return true;
                 }
                 if (scopeStack.Peek().Equals("/*"))
