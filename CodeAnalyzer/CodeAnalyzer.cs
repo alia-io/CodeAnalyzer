@@ -91,7 +91,8 @@ namespace CodeAnalyzer
                                         || (stringBuilder.ToString().Equals("=") && ((char)enumerator.Current).Equals('>'))
                                         || (stringBuilder.ToString().Equals("&") && ((char)enumerator.Current).Equals('&'))
                                         || (stringBuilder.ToString().Equals("|") && ((char)enumerator.Current).Equals('|'))
-                                        || (stringBuilder.ToString().Equals("\\") && (((char)enumerator.Current).Equals('"') || ((char)enumerator.Current).Equals('\''))))
+                                        || (stringBuilder.ToString().Equals("\\") && (((char)enumerator.Current).Equals('\\') 
+                                            || ((char)enumerator.Current).Equals('"') || ((char)enumerator.Current).Equals('\''))))
                                     {
                                         stringBuilder.Append(enumerator.Current);
                                         programFile.FileTextData.Add(stringBuilder.ToString());
@@ -318,7 +319,7 @@ namespace CodeAnalyzer
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
                         }
-                        else if (!scopeStack.Peek().Equals("{")) // ending another named scope
+                        else if (!scopeStack.Peek().Equals("{") && !scopeStack.Peek().Equals("(")) // ending another named scope
                             scopeStack.Pop();
                     }
                     stringBuilder.Clear();
