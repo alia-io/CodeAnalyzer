@@ -294,10 +294,6 @@ namespace CodeAnalyzer
                         if (scopeStack.Peek().Equals("("))
                             scopeStack.Pop();
 
-                /* ---------- Check for open parenthesis ---------- */
-                if (entry.Equals("("))
-                    scopeStack.Push("(");
-
                 /* ---------- Check for the end of an existing bracketed scope ---------- */
                 if (entry.Equals("}"))
                 {
@@ -362,6 +358,10 @@ namespace CodeAnalyzer
                         scopeOpener = true;
                 }
 
+                /* ---------- Check for open parenthesis ---------- */
+                if (entry.Equals("("))
+                    scopeStack.Push("(");
+
                 /* Push an opening bracket */
                 if (entry.Equals("{"))
                 {
@@ -376,7 +376,7 @@ namespace CodeAnalyzer
                 }
 
                 /* ---------- Check for the end of an existing bracketless scope ---------- */
-                if (!populateObjectList && entry.Equals(";") && scopeStack.Count > 0 && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
+                if (!populateObjectList && entry.Equals(";") && forScope == 0 && scopeStack.Count > 0 && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
                 {
                     while (scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
                         || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while")
