@@ -170,14 +170,14 @@ namespace CodeAnalyzer
                 /* ---------- Check for a new namespace ---------- */
                 if (entry.Equals("namespace"))
                 {
-                    index = this.NewNamespace(entry, index);
+                    index = this.NewNamespace(index);
                     continue;
                 }
 
                 /* ---------- Check for a new class ---------- */
                 if (entry.Equals("class"))
                 {
-                    index = this.NewClass(entry, index);
+                    index = this.NewClass(index);
                     continue;
                 }
 
@@ -191,9 +191,11 @@ namespace CodeAnalyzer
         }
 
         /* Processes data within a ObjectType (class, interface, etc) scope */
-        private int ProcessObjectTypeData(string entry, int i)
+        private int ProcessObjectTypeData(int i)
         {
+            string entry;
             int index;
+
             for (index = i; index < programFile.FileTextData.Count; index++)
             {
                 entry = programFile.FileTextData[index];
@@ -238,7 +240,7 @@ namespace CodeAnalyzer
                 /* ---------- Check for a new class ---------- */
                 if (entry.Equals("class"))
                 {
-                    index = this.NewClass(entry, index);
+                    index = this.NewClass(index);
                     continue;
                 }
 
@@ -247,7 +249,7 @@ namespace CodeAnalyzer
                 {
                     if (this.CheckIfFunction()) // valid function or method syntax
                     {
-                        index = this.ProcessFunctionData(entry, ++index);
+                        index = this.ProcessFunctionData(++index);
                         continue;
                     }
                     else /* ---------- Other type of open brace ---------- */
@@ -262,8 +264,9 @@ namespace CodeAnalyzer
         }
 
         /* Processes data within a Function scope */
-        private int ProcessFunctionData(string entry, int i)
+        private int ProcessFunctionData(int i)
         {
+            string entry;
             int index;
             bool scopeOpener;
 
@@ -315,7 +318,10 @@ namespace CodeAnalyzer
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
                         }
-                        else if (!scopeStack.Peek().Equals("{") && !scopeStack.Peek().Equals("(")) // ending another named scope
+                        else // ending another named scope
+                            while (scopeStack.Count > 0 && scopeStack.Peek().Equals("if") && !scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
+                                || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while") 
+                                || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch"))
                             scopeStack.Pop();
                     }
                     stringBuilder.Clear();
@@ -368,7 +374,7 @@ namespace CodeAnalyzer
                     /* ---------- Check if a new function is being started ---------- */
                     if (!scopeOpener && this.CheckIfFunction())
                     {
-                        index = this.ProcessFunctionData(entry, ++index);
+                        index = this.ProcessFunctionData(++index);
                         continue;
                     }
                     else /* ---------- Other type of open bracket ---------- */
@@ -395,8 +401,10 @@ namespace CodeAnalyzer
 
 
         /* -------------------- Helper Methods -------------------- */
-        private int NewNamespace(string entry, int index)
+        private int NewNamespace(int index)
         {
+            string entry;
+
             scopeStack.Push("namespace"); // push the type of the next scope opener onto scopeStack
 
             stringBuilder.Clear();
@@ -422,10 +430,12 @@ namespace CodeAnalyzer
             return index;
         }
 
-        private int NewClass(string entry, int index)
+        private int NewClass(int index)
         {
+            string entry;
             string classModifiers = stringBuilder.ToString();   // get the class modifiers
             List<string> classText = new List<string>();
+            int brackets = 0;
 
             scopeStack.Push("class"); // push the type of the next scope opener onto scopeStack
 
@@ -437,6 +447,24 @@ namespace CodeAnalyzer
                 {
                     scopeStack.Push("{"); // push the new scope opener onto scopeStack
                     break;
+                }
+                if (classText.Count == 0)
+                {
+                    if (entry.Equals("<") || entry.Equals("["))
+                    {
+                        brackets++;
+                        stringBuilder.Append(entry);
+                        continue;
+                    }
+                    else if (brackets != 0)
+                    {
+                        if (entry.Equals(">") || entry.Equals("]"))
+                        {
+                            brackets--;
+                        }
+                        stringBuilder.Append(entry);
+                        continue;
+                    }
                 }
                 if (stringBuilder.Length == 0)
                 {
@@ -462,7 +490,7 @@ namespace CodeAnalyzer
 
             typeStack.Push(programClass); // push the class onto typeStack
 
-            return this.ProcessObjectTypeData(entry, ++index); // reads the rest of the class
+            return this.ProcessObjectTypeData(++index); // reads the rest of the class
         }
 
         /* Used to detect the syntax for a function signature */
@@ -472,18 +500,30 @@ namespace CodeAnalyzer
 
             /* ---------- Determine whether new scope is a function ---------- */
             int functionRequirement = 0;    // the requirement to check next
-                                            // (Optional: modifiers), [0]: return type, [1]: name, [2]: open parenthesis, (Optional: parameters), [3]: close parenthesis
-                                            // [4]: all requirements fulfilled for *normal* functions
+                                            // (Optional: modifiers), [0-1]: return type, [1-2]: name, [2-3]: open parenthesis, (Optional: parameters), 
+                                            // [3-4]: close parenthesis, [4]: all requirements fulfilled for *normal* functions
             string modifiers = "";
             string returnType = "";
             string name = "";
             string parameters = "";
             string baseParameters = "";
 
+            int parentheses = 0;            // ensure the same number of opening and closing parentheses
+            int brackets = 0;
+            int periods = 0;
+
             for (int i = 0; i < functionIdentifier.Length; i++)
             {
                 string text = functionIdentifier[i];
                 if (text.Length < 1) continue;
+
+                if (periods > 0 && !text.Equals(".")) periods--;
+
+                if (text.Equals("(")) parentheses++;
+                else if (text.Equals(")")) parentheses--;
+                else if (text.Equals("[") || text.Equals("<")) brackets++;
+                else if (text.Equals("]") || text.Equals(">")) brackets--;
+                else if (text.Equals(".")) periods++;
 
                 switch (functionRequirement)
                 {
@@ -495,18 +535,26 @@ namespace CodeAnalyzer
                             functionRequirement = 1;
                             break;
                         }
-                        if (this.CheckIfDeconstructor(functionIdentifier, functionRequirement, modifiers, returnType, name, parameters, baseParameters, i))
-                            return true;
-                        return false; // failed function syntax
+                        functionRequirement = -1; // failed function syntax
+                        break;
                     case 1:
                         if (text.Equals(" ")) continue;
-                        if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+                        if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
                         {
                             name = text;
                             functionRequirement = 2;
                             break;
                         }
-                        return false;  // failed function syntax
+                        if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
+                        {
+                            if (name.Length == 0)
+                                returnType += text;
+                            else
+                                name += text;
+                            break;
+                        }
+                        functionRequirement = -1; // failed function syntax
+                        break;
                     case 2:
                         if (text.Equals(" ")) continue;
                         if (text.Equals("("))
@@ -515,7 +563,7 @@ namespace CodeAnalyzer
                             functionRequirement = 3;
                             break;
                         }
-                        if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+                        if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
                         {
                             if (modifiers.Length > 0) modifiers += " ";
                             modifiers += returnType;
@@ -523,23 +571,33 @@ namespace CodeAnalyzer
                             name = text;
                             break;
                         }
-                        return false;  // failed function syntax
+                        if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
+                        {
+                            if (name.Length == 0)
+                                returnType += text;
+                            else
+                                name += text;
+                            break;
+                        }
+                        functionRequirement = -1; // failed function syntax
+                        break;
                     case 3:
                         if (text.Equals(" ")) continue;
-                        if (text.Equals(")"))
+                        if (text.Equals(")") && parentheses == 0)
                         {
                             parameters += text;
                             functionRequirement = 4;
                             break;
                         }
-                        if (!parameters[parameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
+                        if (brackets != 0 && periods != 0 && !parameters[parameters.Length - 1].Equals('(') 
+                                && !text.Equals(",") && !text.Equals("<") && !text.Equals(">") && !text.Equals("[") && !text.Equals("]")) 
+                            parameters += " ";
                         parameters += text;
                         break;
                     case 4:
                         if (text.Equals(" ")) continue;
-                        if (this.CheckIfConstructor(functionIdentifier, functionRequirement, modifiers, returnType, name, parameters, baseParameters, i))
-                            return true;
-                        return false;
+                        functionRequirement = -1; // failed function syntax
+                        break;
                 }
             }
 
@@ -557,20 +615,30 @@ namespace CodeAnalyzer
                 scopeStack.Push("{");
 
                 typeStack.Push(programFunction); // push the class onto typeStack
-
                 return true;
             }
+            else if (this.CheckIfConstructor(functionIdentifier))
+                return true;
+            else if (this.CheckIfDeconstructor(functionIdentifier))
+                return true;
 
             return false;
         }
 
         /* Used to detect the syntax for a Deconstructor function */
-        private bool CheckIfDeconstructor(string[] functionIdentifier, int functionRequirement, string modifiers, string returnType, string name, string parameters, string baseParameters, int index)
+        private bool CheckIfDeconstructor(string[] functionIdentifier)
         {
-            // [0]: name == ~ClassName, [1]: open parenthesis, [2] close paranethesis
-            // [3]: all requirements fulfilled for *deconstructor* functions
+            int functionRequirement = 0;
+            // [0-1]: ~, [1-2]: name == class.Name [2-3]: open parenthesis, [3-4] close paranethesis
+            // [4]: all requirements fulfilled for *deconstructor* functions
 
-            for (int i = index; i < functionIdentifier.Length; i++)
+            string modifiers = "";
+            string returnType = "";
+            string name = "";
+            string parameters = "";
+            string baseParameters = "";
+
+            for (int i = 0; i < functionIdentifier.Length; i++)
             {
                 string text = functionIdentifier[i];
                 if (text.Length < 1) continue;
@@ -579,38 +647,58 @@ namespace CodeAnalyzer
                 {
                     case 0:
                         if (text.Equals(" ")) continue;
-                        if (text[0].Equals('~'))
-                            if (text.Substring(1).Equals(typeStack.Peek().Name))
+                        if (text.Equals("~"))
+                        {
+                            functionRequirement = 1;
+                            break;
+                        }
+                        functionRequirement = -1; // failed deconstructor syntax
+                        break;
+                    case 1:
+                        if (text.Equals(" ")) continue;
+                        if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramClass))
+                        {
+                            string className = typeStack.Peek().Name;
+                            if (className.Contains("<"))
+                                className = className.Substring(0, className.IndexOf("<") + 1);
+                            else if (className.Contains("["))
+                                className = className.Substring(0, className.IndexOf("[") + 1);
+                            if (className.Equals(text))
                             {
-                                name = text;
-                                functionRequirement = 1;
+                                functionRequirement = 2;
                                 break;
                             }
-                        return false; // failed deconstructor syntax
-                    case 1:
+                        }
+                        functionRequirement = -1; // failed deconstructor syntax
+                        break;
+                    case 2:
                         if (text.Equals(" ")) continue;
                         if (text.Equals("("))
                         {
                             parameters = text;
-                            functionRequirement = 2;
+                            functionRequirement = 3;
+                            break;
                         }
-                        return false;  // failed deconstructor syntax
-                    case 2:
+                        functionRequirement = -1; // failed deconstructor syntax
+                        break;
+                    case 3:
                         if (text.Equals(" ")) continue;
                         if (text.Equals(")"))
                         {
                             parameters += text;
-                            functionRequirement = 3;
+                            functionRequirement = 4;
                             break;
                         }
-                        return false;  // failed deconstructor syntax
-                    case 3:
+                        functionRequirement = -1; // failed deconstructor syntax
+                        break;
+                    case 4:
                         if (text.Equals(" ")) continue;
-                        return false;
+                        functionRequirement = -1;
+                        break;
                 }
             }
 
-            if (functionRequirement == 3) // deconstructor signature detected
+            if (functionRequirement == 4) // deconstructor signature detected
             {
                 stringBuilder.Clear();
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
@@ -624,7 +712,6 @@ namespace CodeAnalyzer
                 scopeStack.Push("{");
 
                 typeStack.Push(programFunction); // push the class onto typeStack
-
                 return true;
             }
 
@@ -633,68 +720,167 @@ namespace CodeAnalyzer
 
         /* Used to detect the syntax for a Constructor function */
         // TODO: redo to check for a single-word Constructor function
-        private bool CheckIfConstructor(string[] functionIdentifier, int functionRequirement, string modifiers, string returnType, string name, string parameters, string baseParameters, int index)
+        private bool CheckIfConstructor(string[] functionIdentifier)
         {
-            // [4]: name == ClassName, [5]: colon, [6]: "base" keyword, [7]: open paranthesis, (Optional: parameters), [8]: close parenthesis
-            // [9]: all requirements fulfilled for *constructor* functions
+            int functionRequirement = 0;
+            // (Optional: modifiers), [0-1]: return type, [1-2]: name, [2-3]: open parenthesis & name == ClassName,
+            // (Optional: parameters), [3-4]: close parenthesis, OPTIONAL: [4-5]: colon, [5-6]: "base" keyword, [6-7]: open paranthesis,
+            // (Optional: parameters), [7-8]: close parenthesis, [8]: all requirements fulfilled for *constructor* functions
 
-            if (name.Equals(typeStack.Peek().Name))
-                functionRequirement = 5;
-            else
-                return false; // failed constructor syntax
+            string modifiers = "";
+            string returnType = "";
+            string name = "";
+            string parameters = "";
+            string baseParameters = "";
+
+            int parentheses = 0;            // ensure the same number of opening and closing parentheses
+            int brackets = 0;
+            int periods = 0;
 
             for (int i = 0; i < functionIdentifier.Length; i++)
             {
                 string text = functionIdentifier[i];
                 if (text.Length < 1) continue;
 
+                if (periods > 0 && !text.Equals(".")) periods--;
+
+                if (text.Equals("(")) parentheses++;
+                else if (text.Equals(")")) parentheses--;
+                else if (text.Equals("[") || text.Equals("<")) brackets++;
+                else if (text.Equals("]") || text.Equals(">")) brackets--;
+                else if (text.Equals(".")) periods++;
+
                 switch (functionRequirement)
                 {
-                    case 5:
+                    case 0:
+                        if (text.Equals(" ")) continue;
+                        if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+                        {
+                            returnType = text;
+                            functionRequirement = 1;
+                            break;
+                        }
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 1:
+                        if (text.Equals(" ")) continue;
+                        if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+                        {
+                            name = text;
+                            functionRequirement = 2;
+                            break;
+                        }
+                        if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
+                        {
+                            if (name.Length == 0)
+                                returnType += text;
+                            else
+                                name += text;
+                            break;
+                        }
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 2:
+                        if (text.Equals(" ")) continue;
+                        if (text.Equals("("))
+                        {
+                            parameters = text;
+                            if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramClass))
+                            {
+                                string className = typeStack.Peek().Name;
+                                if (className.Contains("<"))
+                                    className = className.Substring(0, className.IndexOf("<") + 1);
+                                else if (className.Contains("["))
+                                    className = className.Substring(0, className.IndexOf("[") + 1);
+                                if (className.Equals(name))
+                                {
+                                    functionRequirement = 3;
+                                    break;
+                                }
+                            }
+                            functionRequirement = -1;
+                            break;
+                        }
+                        if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+                        {
+                            if (modifiers.Length > 0) modifiers += " ";
+                            modifiers += returnType;
+                            returnType = name;
+                            name = text;
+                            break;
+                        }
+                        if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
+                        {
+                            if (name.Length == 0)
+                                returnType += text;
+                            else
+                                name += text;
+                            break;
+                        }
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 3:
+                        if (text.Equals(" ")) continue;
+                        if (text.Equals(")") && parentheses == 0)
+                        {
+                            parameters += text;
+                            functionRequirement = 4;
+                            break;
+                        }
+                        if (brackets != 0 && periods != 0 && !parameters[parameters.Length - 1].Equals('(')
+                                && !text.Equals(",") && !text.Equals("<") && !text.Equals(">") && !text.Equals("[") && !text.Equals("]"))
+                            parameters += " ";
+                        parameters += text;
+                        break;
+                    case 4:
                         if (text.Equals(" ")) continue;
                         if (text.Equals(":"))
                         {
                             baseParameters = text;
-                            functionRequirement = 6;
+                            functionRequirement = 5;
                             break;
                         }
-                        return false; // failed constructor syntax
-                    case 6:
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 5:
                         if (text.Equals(" ")) continue;
                         if (text.Equals("base"))
                         {
                             baseParameters = " " + text;
-                            functionRequirement = 7;
+                            functionRequirement = 6;
                             break;
                         }
-                        return false; // failed constructor syntax
-                    case 7:
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 6:
                         if (text.Equals(" ")) continue;
                         if (text.Equals("("))
                         {
-                            baseParameters += " " + text;
-                            functionRequirement = 8;
+                            baseParameters += text;
+                            functionRequirement = 7;
                             break;
                         }
-                        return false; // failed constructor syntax
-                    case 8:
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 7:
                         if (text.Equals(" ")) continue;
                         if (text.Equals(")"))
                         {
                             baseParameters += text;
-                            functionRequirement = 9;
+                            functionRequirement = 8;
                             break;
                         }
                         if (!baseParameters[baseParameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
                         baseParameters += text;
                         break;
-                    case 9:
+                    case 8:
                         if (text.Equals(" ")) continue;
-                        return false;
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
                 }
             }
 
-            if (functionRequirement == 9) // function signature detected
+            if (functionRequirement == 4 || functionRequirement == 8) // function signature detected
             {
                 stringBuilder.Clear();
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
