@@ -160,14 +160,14 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramFunction))
             {
                 Console.WriteLine("Function: " + programType.Name);
-                for (int i = 0; i < tabs; i++)
+                /*for (int i = 0; i < tabs; i++)
                     Console.Write("\t");
                 Console.Write("\t- Signature: " + ((ProgramFunction)programType).Modifiers 
                     + " " + ((ProgramFunction)programType).ReturnType 
                     + " " + programType.Name
                     + ((ProgramFunction)programType).Parameters
                     + " " + ((ProgramFunction)programType).BaseParameters);
-                Console.Write("\n");
+                Console.Write("\n");*/
                 for (int i = 0; i < tabs; i++)
                     Console.Write("\t");
                 Console.Write("\t- Size: " + ((ProgramFunction)programType).Size);

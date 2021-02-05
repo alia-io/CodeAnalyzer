@@ -319,9 +319,9 @@ namespace CodeAnalyzer
                             if (typeStack.Count > 0) typeStack.Pop();
                         }
                         else // ending another named scope
-                            while (scopeStack.Count > 0 && scopeStack.Peek().Equals("if") && !scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
+                            while (scopeStack.Count > 0 && (scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
                                 || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while") 
-                                || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch"))
+                                || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch")))
                             scopeStack.Pop();
                     }
                     stringBuilder.Clear();
@@ -984,7 +984,7 @@ namespace CodeAnalyzer
                 case 1:
                     if (entry.Equals("if"))
                     {
-                        elseIfScope = 0;
+                        elseScope = 0;
                         break;
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
