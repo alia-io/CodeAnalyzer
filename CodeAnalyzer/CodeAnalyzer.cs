@@ -517,12 +517,9 @@ namespace CodeAnalyzer
                 string text = functionIdentifier[i];
                 if (text.Length < 1) continue;
 
-                if (periods > 0 && !text.Equals(".")) periods--;
-
                 if (text.Equals("(")) parentheses++;
                 else if (text.Equals(")")) parentheses--;
                 else if (text.Equals("[") || text.Equals("<")) brackets++;
-                else if (text.Equals("]") || text.Equals(">")) brackets--;
                 else if (text.Equals(".")) periods++;
 
                 switch (functionRequirement)
@@ -589,8 +586,7 @@ namespace CodeAnalyzer
                             functionRequirement = 4;
                             break;
                         }
-                        if (brackets != 0 && periods != 0 && !parameters[parameters.Length - 1].Equals('(') 
-                                && !text.Equals(",") && !text.Equals("<") && !text.Equals(">") && !text.Equals("[") && !text.Equals("]")) 
+                        if (brackets == 0 && periods == 0 && !parameters[parameters.Length - 1].Equals('(') && !text.Equals(",")) 
                             parameters += " ";
                         parameters += text;
                         break;
@@ -599,6 +595,8 @@ namespace CodeAnalyzer
                         functionRequirement = -1; // failed function syntax
                         break;
                 }
+                if (periods > 0 && !text.Equals(".")) periods--;
+                else if (text.Equals("]") || text.Equals(">")) brackets--;
             }
 
             if (functionRequirement == 4) // function signature detected
@@ -742,12 +740,9 @@ namespace CodeAnalyzer
                 string text = functionIdentifier[i];
                 if (text.Length < 1) continue;
 
-                if (periods > 0 && !text.Equals(".")) periods--;
-
                 if (text.Equals("(")) parentheses++;
                 else if (text.Equals(")")) parentheses--;
                 else if (text.Equals("[") || text.Equals("<")) brackets++;
-                else if (text.Equals("]") || text.Equals(">")) brackets--;
                 else if (text.Equals(".")) periods++;
 
                 switch (functionRequirement)
@@ -827,8 +822,7 @@ namespace CodeAnalyzer
                             functionRequirement = 4;
                             break;
                         }
-                        if (brackets != 0 && periods != 0 && !parameters[parameters.Length - 1].Equals('(')
-                                && !text.Equals(",") && !text.Equals("<") && !text.Equals(">") && !text.Equals("[") && !text.Equals("]"))
+                        if (brackets == 0 && periods == 0 && !parameters[parameters.Length - 1].Equals('(') && !text.Equals(","))
                             parameters += " ";
                         parameters += text;
                         break;
@@ -878,6 +872,8 @@ namespace CodeAnalyzer
                         functionRequirement = -1; // failed constructor syntax
                         break;
                 }
+                if (periods > 0 && !text.Equals(".")) periods--;
+                else if (text.Equals("]") || text.Equals(">")) brackets--;
             }
 
             if (functionRequirement == 4 || functionRequirement == 8) // function signature detected
@@ -928,7 +924,11 @@ namespace CodeAnalyzer
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("if");
-                    if (entry.Equals("if") && elseIfScope == 0) ifScope = 1; // check if the next statement starts an "if"
+                    if (entry.Equals("if") && elseIfScope == 0) // check if the next statement starts an "if"
+                    {
+                        ifScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else ifScope = 0; // reset the ifScope rule
                     return true;
             }
@@ -963,7 +963,11 @@ namespace CodeAnalyzer
                 case 5:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else if");
-                    if (entry.Equals("else")) elseIfScope = 1; // check if the next statement starts an "else if"
+                    if (entry.Equals("else")) // check if the next statement starts an "else if"
+                    {
+                        elseIfScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else elseIfScope = 0; // reset the elseIfScope rule
                     return true;
             }
@@ -985,7 +989,11 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else");
-                    if (entry.Equals("else")) elseScope = 1; // check if the next statement starts an "else"
+                    if (entry.Equals("else")) // check if the next statement starts an "else"
+                    {
+                        elseScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else elseScope = 0; // reset the elseScope rule
                     return true;
             }
@@ -1028,7 +1036,11 @@ namespace CodeAnalyzer
                 case 8:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("for");
-                    if (entry.Equals("for")) forScope = 1; // check if the next statement starts a "for"
+                    if (entry.Equals("for")) // check if the next statement starts a "for"
+                    {
+                        forScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else forScope = 0; // reset the forScope rule
                     return true;
             }
@@ -1059,7 +1071,11 @@ namespace CodeAnalyzer
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("foreach");
-                    if (entry.Equals("foreach")) forEachScope = 1; // check if the next statement starts a "foreach"
+                    if (entry.Equals("foreach")) // check if the next statement starts a "foreach"
+                    {
+                        forEachScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else forEachScope = 0; // reset the forEachScope rule
                     return true;
             }
@@ -1095,7 +1111,11 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("while");
-                    if (entry.Equals("while")) whileScope = 1; // check if the next statement starts a "while"
+                    if (entry.Equals("while")) // check if the next statement starts a "while"
+                    {
+                        whileScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
                     else whileScope = 0; // reset the whileScope rule
                     return true;
             }
