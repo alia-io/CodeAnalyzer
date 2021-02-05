@@ -1235,8 +1235,74 @@ namespace CodeAnalyzer
         }
     }
 
-    class ClassProcessor
+    class RelationshipProcessor
     {
-        // TODO
+
+        ProgramObjectType programObjectType;
+        CodeAnalysisData codeAnalysisData;
+        
+        public void ProcessRelationships(ProgramObjectType programObjectType, CodeAnalysisData codeAnalysisData)
+        {
+            this.programObjectType = programObjectType;
+            this.codeAnalysisData = codeAnalysisData;
+
+            int index = this.SetSuperclasses(); // get the superclass info from the beginning of the class text
+
+            // TODO
+        }
+
+        private int SetSuperclasses()
+        {
+            string entry;
+            int index;
+            bool hasSuperclasses = false;
+            int brackets = 0;
+
+            for (index = 0;  index < programObjectType.TextData.Count; index++)
+            {
+                entry = programObjectType.TextData[index];
+
+                if (entry.Equals(" ")) continue;
+
+                if (!hasSuperclasses)
+                {
+                    if (entry.Equals(":"))
+                    {
+                        hasSuperclasses = true;
+                        continue;
+                    }
+                    return index;
+                }
+
+                if (entry.Equals("{"))
+                    return ++index;
+
+                if (entry.Equals(","))
+                    continue;
+
+                if (entry.Equals("[") || entry.Equals("<"))
+                {
+                    brackets++;
+                    continue;
+                }
+
+                if (entry.Equals("]") || entry.Equals(">"))
+                {
+                    brackets--;
+                    continue;
+                }
+
+                if (codeAnalysisData.ProgramObjectTypes.Contains(entry))
+                {
+                    ProgramObjectType super = codeAnalysisData.ProgramObjectTypes[entry];
+                    super.SubObjects.Add(programObjectType);
+                    programObjectType.SuperObjects.Add(super);
+                }
+            }
+
+            return index;
+        }
+
+
     }
 }

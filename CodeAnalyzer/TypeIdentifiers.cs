@@ -69,7 +69,7 @@ namespace CodeAnalyzer
     }
 
     public class ProgramClass : ProgramObjectType { public ProgramClass(string name, string modifiers) : base(name, modifiers) { } }
-    //public class ProgramInterface : ProgramObjectType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
+    public class ProgramInterface : ProgramObjectType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
     //public class ProgramStruct : ProgramObjectType { public ProgramStruct(string name, string modifiers) : base(name, modifiers) { } }
     //public class ProgramEnum : ProgramObjectType { public ProgramEnum(string name, string modifiers) : base(name, modifiers) { } }
 

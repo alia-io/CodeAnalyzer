@@ -153,9 +153,37 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramClass))
             {
                 Console.WriteLine("Class: " + programType.Name);
-                for (int i = 0; i < tabs; i++)
+                /*for (int i = 0; i < tabs; i++)
                     Console.Write("\t");
-                Console.Write("\t- Modifiers: " + ((ProgramClass)programType).Modifiers);
+                Console.Write("\t- Modifiers: " + ((ProgramClass)programType).Modifiers);*/
+                if (printRelationshipData)
+                {
+                    for (int i = 0; i < tabs; i++)
+                        Console.Write("\t");
+                    bool comma = false;
+                    Console.Write("\t- Superclasses: ");
+                    foreach (ProgramObjectType programObjectType in ((ProgramClass)programType).SuperObjects)
+                    {
+                        if (comma)
+                            Console.Write(", ");
+                        Console.Write(programObjectType.Name);
+                        if (!comma)
+                            comma = true;
+                    }
+                    Console.Write("\n");
+                    for (int i = 0; i < tabs; i++)
+                        Console.Write("\t");
+                    comma = false;
+                    Console.Write("\t- Subclasses: ");
+                    foreach (ProgramObjectType programObjectType in ((ProgramClass)programType).SubObjects)
+                    {
+                        if (comma)
+                            Console.Write(", ");
+                        Console.Write(programObjectType.Name);
+                        if (!comma)
+                            comma = true;
+                    }
+                }
             }
             else if (programType.GetType() == typeof(ProgramFunction))
             {
@@ -168,13 +196,16 @@ namespace CodeAnalyzer
                     + ((ProgramFunction)programType).Parameters
                     + " " + ((ProgramFunction)programType).BaseParameters);
                 Console.Write("\n");*/
-                for (int i = 0; i < tabs; i++)
-                    Console.Write("\t");
-                Console.Write("\t- Size: " + ((ProgramFunction)programType).Size);
-                Console.Write("\n");
-                for (int i = 0; i < tabs; i++)
-                    Console.Write("\t");
-                Console.Write("\t- Complexity: " + ((ProgramFunction)programType).Complexity);
+                if (!printRelationshipData)
+                {
+                    for (int i = 0; i < tabs; i++)
+                        Console.Write("\t");
+                    Console.Write("\t- Size: " + ((ProgramFunction)programType).Size);
+                    Console.Write("\n");
+                    for (int i = 0; i < tabs; i++)
+                        Console.Write("\t");
+                    Console.Write("\t- Complexity: " + ((ProgramFunction)programType).Complexity);
+                }
             }
 
             /* ---------- Repeat with child data ---------- */

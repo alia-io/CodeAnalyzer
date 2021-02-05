@@ -71,7 +71,11 @@ namespace CodeAnalyzer
             /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
             if (this.inputSessionData.SetRelationshipData)
             {
-                // TODO ......
+                foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+                {
+                    RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
+                    relationshipProcessor.ProcessRelationships(programObjectType, this.codeAnalysisData);
+                }
             }
 
             /* -------------------- Printing the Output Data -------------------- */
@@ -84,6 +88,20 @@ namespace CodeAnalyzer
             {
                 outputWriter.PrintToStandardOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);
             }
+
+            // test
+            /*foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+            {
+                Console.Write("\n");
+                Console.Write("\nClass Name: " + programObjectType.Name);
+                Console.Write("\n\n| ");
+                foreach (string text in programObjectType.TextData)
+                {
+                    Console.Write(text + " | ");
+                }
+            }
+            Console.Write("\n\n");*/
+            // end test
         }
 
     }
