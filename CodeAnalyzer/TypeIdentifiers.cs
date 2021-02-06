@@ -34,8 +34,13 @@ namespace CodeAnalyzer
     {
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
         public List<ProgramClassType> SubClasses { get; }       // *Inheritance* - ProgramClass(es) that this class is inherited by
+        public List<ProgramClassType> UsedByClasses { get; }    // *Using* - ProgramClass(es) that this ProgramClass is used by
 
-        public ProgramClassType(string name, string modifiers) : base(name, modifiers) { this.SubClasses = new List<ProgramClassType>(); }
+        public ProgramClassType(string name, string modifiers) : base(name, modifiers) 
+        { 
+            this.SubClasses = new List<ProgramClassType>();
+            this.UsedByClasses = new List<ProgramClassType>();
+        }
 
         public override string Name
         {
@@ -68,29 +73,48 @@ namespace CodeAnalyzer
         public List<ProgramClassType> OwnedClasses { get; }     // *Composition/Aggregation* - ProgramClass(es) that are "part of" (owned by) this ProgramClass
         public List<ProgramClassType> OwnedByClasses { get; }   // *Composition/Aggregation* - ProgramClass(es) that this ProgramClass is "part of"
         public List<ProgramClassType> UsedClasses { get; }      // *Using* - ProgramClass(es) that this ProgramClass uses
-        public List<ProgramClassType> UsedByClasses { get; }    // *Using* - ProgramClass(es) that this ProgramClass is used by
         public ProgramClass(string name, string modifiers) : base(name, modifiers) 
         {
             this.SuperClasses = new List<ProgramClassType>();
             this.OwnedClasses = new List<ProgramClassType>();
             this.OwnedByClasses = new List<ProgramClassType>();
             this.UsedClasses = new List<ProgramClassType>();
-            this.UsedByClasses = new List<ProgramClassType>();
-        } 
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != typeof(ProgramClass)) return false;
+            return (base.Name).Equals(((ProgramClass)obj).Name);
+        }
+
+        public override int GetHashCode() { return base.GetHashCode(); }
     }
-    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
+    public class ProgramInterface : ProgramClassType 
+    { 
+        public ProgramInterface(string name, string modifiers) : base(name, modifiers) { }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != typeof(ProgramInterface)) return false;
+            return (base.Name).Equals(((ProgramInterface)obj).Name);
+        }
+
+        public override int GetHashCode() { return base.GetHashCode(); }
+    }
 
     public class ProgramFunction : ProgramDataType
     {
         public string ReturnType { get; }
-        public string Parameters { get; }
+        //public string Parameters { get; }
+        public List<string> Parameters { get; set; }
         public string BaseParameters { get; }
         public int Size { get; set; }
         public int Complexity { get; set; }
-        public ProgramFunction(string name, string modifiers, string returnType, string parameters, string baseParameters) : base(name, modifiers)
+        public ProgramFunction(string name, string modifiers, string returnType, List<string> parameters, string baseParameters) : base(name, modifiers)
         {
             this.ReturnType = returnType;
-            this.Parameters = parameters;
+            //this.Parameters = parameters;
+            this.Parameters = new List<string>();
             this.BaseParameters = baseParameters;
             this.Size = 1;
             this.Complexity = 0;

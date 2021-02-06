@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// TODO: find interfaces!
 namespace CodeAnalyzer
 {
     class FileProcessor
@@ -17,8 +18,8 @@ namespace CodeAnalyzer
         private readonly Stack<string> scopeStack = new Stack<string>();
         private readonly Stack<ProgramType> typeStack = new Stack<ProgramType>();
 
-        //private readonly List<ProgramClassType> currentProgramClassTypes = new List<ProgramClassType>();  // holds the current ProgramClassTypes to store text data within
         private StringBuilder stringBuilder = new StringBuilder("");
+        int stringBuilderSize = 0;
 
         /* Scope syntax rules to check for */
         int ifScope = 0;        // [0-1]: "if" ONLY if elseIfScope == 0, [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless
@@ -48,7 +49,7 @@ namespace CodeAnalyzer
         /* Puts the file next into a string array, dividing elements logically */
         private void SetFileTextData()
         {
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
             string[] programLines = programFile.FileText.Split(new String[] { Environment.NewLine }, StringSplitOptions.None);
 
             for (int i = 0; i < programLines.Length; i++)
@@ -62,7 +63,7 @@ namespace CodeAnalyzer
                         if (stringBuilder.Length > 0)
                         {
                             programFile.FileTextData.Add(stringBuilder.ToString());
-                            stringBuilder.Clear();
+                            this.ClearStringBuilder();
                         }
                         continue;
                     }
@@ -92,15 +93,15 @@ namespace CodeAnalyzer
                                         || (stringBuilder.ToString().Equals("\\") && (((char)enumerator.Current).Equals('\\') 
                                             || ((char)enumerator.Current).Equals('"') || ((char)enumerator.Current).Equals('\''))))
                                     {
-                                        stringBuilder.Append(enumerator.Current);
+                                        this.AppendToStringBuilder(enumerator.Current);
                                         programFile.FileTextData.Add(stringBuilder.ToString());
-                                        stringBuilder.Clear();
+                                        this.ClearStringBuilder();
                                         continue;
                                     }
                                 }
                             }
                             programFile.FileTextData.Add(stringBuilder.ToString());
-                            stringBuilder.Clear();
+                            this.ClearStringBuilder();
                         }
                     }
                     else
@@ -111,16 +112,16 @@ namespace CodeAnalyzer
                                 && !((char)stringBuilder.ToString()[0]).Equals('_'))
                             {
                                 programFile.FileTextData.Add(stringBuilder.ToString());
-                                stringBuilder.Clear();
+                                this.ClearStringBuilder();
                             }
                         }
                     }
-                    stringBuilder.Append(enumerator.Current);
+                    this.AppendToStringBuilder(enumerator.Current);
                 }
                 if (stringBuilder.Length > 0)
                 {
                     programFile.FileTextData.Add(stringBuilder.ToString());
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                 }
 
                 programFile.FileTextData.Add(" ");
@@ -131,7 +132,7 @@ namespace CodeAnalyzer
         /* Fully processes the file data (except relationship data), fills all internal Child ProgramType lists */
         private void ProcessFileData()
         {
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
             string entry;
 
             for (int index = 0; index < programFile.FileTextData.Count; index++)
@@ -161,7 +162,7 @@ namespace CodeAnalyzer
                             if (typeStack.Count > 0) typeStack.Pop();
                         }
                     }
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     continue;
                 }
 
@@ -184,7 +185,7 @@ namespace CodeAnalyzer
                     scopeStack.Push(entry);
 
                 /* ---------- Update stringBuilder ---------- */
-                stringBuilder = this.UpdateStringBuilder(stringBuilder, entry);
+                this.UpdateStringBuilder(entry);
             }
         }
 
@@ -222,7 +223,7 @@ namespace CodeAnalyzer
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
-                            stringBuilder.Clear();
+                            this.ClearStringBuilder();
                             return index;
                         }
                         if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("interface")              // ending a different named scope
@@ -255,7 +256,7 @@ namespace CodeAnalyzer
                 }
 
                 /* ---------- Update stringBuilder ---------- */
-                stringBuilder = this.UpdateStringBuilder(stringBuilder, entry);
+                this.UpdateStringBuilder(entry);
             }
 
             return index;
@@ -306,7 +307,7 @@ namespace CodeAnalyzer
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
-                            stringBuilder.Clear();
+                            this.ClearStringBuilder();
                             return index;
                         }
                         // ending a different ProgramType scope
@@ -322,7 +323,7 @@ namespace CodeAnalyzer
                                 || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch")))
                             scopeStack.Pop();
                     }
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     continue;
                 }
 
@@ -362,7 +363,7 @@ namespace CodeAnalyzer
                 }
 
                 /* ---------- Update stringBuilder ---------- */
-                stringBuilder = this.UpdateStringBuilder(stringBuilder, entry);
+                this.UpdateStringBuilder(entry);
             }
 
             return index;
@@ -376,7 +377,7 @@ namespace CodeAnalyzer
 
             scopeStack.Push("namespace"); // push the type of the next scope opener onto scopeStack
 
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
             while (++index < programFile.FileTextData.Count) // get the name of the namespace
             {
                 entry = programFile.FileTextData[index];
@@ -385,11 +386,11 @@ namespace CodeAnalyzer
                     scopeStack.Push("{"); // push the new scope opener onto scopeStack
                     break;
                 }
-                if (!entry.Equals(" ")) stringBuilder.Append(entry);
+                if (!entry.Equals(" ")) this.AppendToStringBuilder(entry);
             }
 
             ProgramNamespace programNamespace = new ProgramNamespace(stringBuilder.ToString());
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
 
             // add new namespace to its parent's ChildList
             if (typeStack.Count > 0) typeStack.Peek().ChildList.Add(programNamespace);
@@ -408,7 +409,7 @@ namespace CodeAnalyzer
 
             scopeStack.Push("class"); // push the type of the next scope opener onto scopeStack
 
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
             while (++index < programFile.FileTextData.Count) // get the name of the class
             {
                 entry = programFile.FileTextData[index];
@@ -434,7 +435,7 @@ namespace CodeAnalyzer
                     if (entry.Equals("<") || entry.Equals("["))
                     {
                         brackets++;
-                        stringBuilder.Append(entry);
+                        this.AppendToStringBuilder(entry);
                         continue;
                     }
                     else if (brackets != 0)
@@ -443,19 +444,19 @@ namespace CodeAnalyzer
                         {
                             brackets--;
                         }
-                        stringBuilder.Append(entry);
+                        this.AppendToStringBuilder(entry);
                         continue;
                     }
                 }
                 if (stringBuilder.Length == 0)
                 {
-                    if (!entry.Equals(" ")) stringBuilder.Append(entry); // the next entry after "class" will be the name
+                    if (!entry.Equals(" ")) this.AppendToStringBuilder(entry); // the next entry after "class" will be the name
                     continue;
                 }
             }
 
             ProgramClass programClass = new ProgramClass(stringBuilder.ToString(), classModifiers);
-            stringBuilder.Clear();
+            this.ClearStringBuilder();
 
             // add text/inheritance data, and add class to general ProgramClassType list
             programClass.TextData = classText;
@@ -482,7 +483,7 @@ namespace CodeAnalyzer
             string modifiers = "";
             string returnType = "";
             string name = "";
-            string parameters = "";
+            List<string> parameters = new List<string>();
             string baseParameters = "";
 
             int parentheses = 0;            // ensure the same number of opening and closing parentheses
@@ -533,7 +534,6 @@ namespace CodeAnalyzer
                         if (text.Equals(" ")) continue;
                         if (text.Equals("("))
                         {
-                            parameters = text;
                             functionRequirement = 3;
                             break;
                         }
@@ -559,13 +559,10 @@ namespace CodeAnalyzer
                         if (text.Equals(" ")) continue;
                         if (text.Equals(")") && parentheses == 0)
                         {
-                            parameters += text;
                             functionRequirement = 4;
                             break;
                         }
-                        if (brackets == 0 && periods == 0 && !parameters[parameters.Length - 1].Equals('(') && !text.Equals(",")) 
-                            parameters += " ";
-                        parameters += text;
+                        parameters.Add(text);
                         break;
                     case 4:
                         if (text.Equals(" ")) continue;
@@ -578,8 +575,8 @@ namespace CodeAnalyzer
 
             if (functionRequirement == 4) // function signature detected
             {
-                stringBuilder.Clear();
                 this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+                this.ClearStringBuilder();
 
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
@@ -612,7 +609,7 @@ namespace CodeAnalyzer
             string modifiers = "";
             string returnType = "";
             string name = "";
-            string parameters = "";
+            List<string> parameters = new List<string>();
             string baseParameters = "";
 
             for (int i = 0; i < functionIdentifier.Length; i++)
@@ -652,7 +649,6 @@ namespace CodeAnalyzer
                         if (text.Equals(" ")) continue;
                         if (text.Equals("("))
                         {
-                            parameters = text;
                             functionRequirement = 3;
                             break;
                         }
@@ -662,7 +658,6 @@ namespace CodeAnalyzer
                         if (text.Equals(" ")) continue;
                         if (text.Equals(")"))
                         {
-                            parameters += text;
                             functionRequirement = 4;
                             break;
                         }
@@ -677,8 +672,8 @@ namespace CodeAnalyzer
 
             if (functionRequirement == 4) // deconstructor signature detected
             {
-                stringBuilder.Clear();
                 this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+                this.ClearStringBuilder();
 
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
@@ -702,14 +697,14 @@ namespace CodeAnalyzer
         private bool CheckIfConstructor(string[] functionIdentifier)
         {
             int functionRequirement = 0;
-            // (Optional: modifiers), [0-1]: return type, [1-2]: name, [2-3]: open parenthesis & name == ClassName,
-            // (Optional: parameters), [3-4]: close parenthesis, OPTIONAL: [4-5]: colon, [5-6]: "base" keyword, [6-7]: open paranthesis,
-            // (Optional: parameters), [7-8]: close parenthesis, [8]: all requirements fulfilled for *constructor* functions
+            // (Optional: modifiers), [0-1]: name, [1-2]: open parenthesis & name == ClassName, (Optional: parameters), 
+            // [2-3]: close parenthesis, OPTIONAL: [3-4]: colon, [4-5]: "base" keyword, [5-6]: open paranthesis,
+            // (Optional: parameters), [6-7]: close parenthesis, [7]: all requirements fulfilled for *constructor* functions
 
             string modifiers = "";
             string returnType = "";
             string name = "";
-            string parameters = "";
+            List<string> parameters = new List<string>();
             string baseParameters = "";
 
             int parentheses = 0;            // ensure the same number of opening and closing parentheses
@@ -732,7 +727,7 @@ namespace CodeAnalyzer
                         if (text.Equals(" ")) continue;
                         if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
                         {
-                            returnType = text;
+                            name = text;
                             functionRequirement = 1;
                             break;
                         }
@@ -740,27 +735,8 @@ namespace CodeAnalyzer
                         break;
                     case 1:
                         if (text.Equals(" ")) continue;
-                        if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
-                        {
-                            name = text;
-                            functionRequirement = 2;
-                            break;
-                        }
-                        if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
-                        {
-                            if (name.Length == 0)
-                                returnType += text;
-                            else
-                                name += text;
-                            break;
-                        }
-                        functionRequirement = -1; // failed constructor syntax
-                        break;
-                    case 2:
-                        if (text.Equals(" ")) continue;
                         if (text.Equals("("))
                         {
-                            parameters = text;
                             if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramClass))
                             {
                                 string className = typeStack.Peek().Name;
@@ -770,7 +746,7 @@ namespace CodeAnalyzer
                                     className = className.Substring(0, className.IndexOf("[") + 1);
                                 if (className.Equals(name))
                                 {
-                                    functionRequirement = 3;
+                                    functionRequirement = 2;
                                     break;
                                 }
                             }
@@ -780,38 +756,41 @@ namespace CodeAnalyzer
                         if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
                         {
                             if (modifiers.Length > 0) modifiers += " ";
-                            modifiers += returnType;
-                            returnType = name;
+                            modifiers += name;
                             name = text;
                             break;
                         }
                         if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals("<") || text.Equals("[") || text.Equals(">") || text.Equals("]"))
                         {
-                            if (name.Length == 0)
-                                returnType += text;
-                            else
-                                name += text;
+                            name += text;
                             break;
                         }
                         functionRequirement = -1; // failed constructor syntax
                         break;
-                    case 3:
+                    case 2:
                         if (text.Equals(" ")) continue;
                         if (text.Equals(")") && parentheses == 0)
                         {
-                            parameters += text;
-                            functionRequirement = 4;
+                            functionRequirement = 3;
                             break;
                         }
-                        if (brackets == 0 && periods == 0 && !parameters[parameters.Length - 1].Equals('(') && !text.Equals(","))
-                            parameters += " ";
-                        parameters += text;
+                        parameters.Add(text);
                         break;
-                    case 4:
+                    case 3:
                         if (text.Equals(" ")) continue;
                         if (text.Equals(":"))
                         {
                             baseParameters = text;
+                            functionRequirement = 4;
+                            break;
+                        }
+                        functionRequirement = -1; // failed constructor syntax
+                        break;
+                    case 4:
+                        if (text.Equals(" ")) continue;
+                        if (text.Equals("base"))
+                        {
+                            baseParameters = " " + text;
                             functionRequirement = 5;
                             break;
                         }
@@ -819,9 +798,9 @@ namespace CodeAnalyzer
                         break;
                     case 5:
                         if (text.Equals(" ")) continue;
-                        if (text.Equals("base"))
+                        if (text.Equals("("))
                         {
-                            baseParameters = " " + text;
+                            baseParameters += text;
                             functionRequirement = 6;
                             break;
                         }
@@ -829,26 +808,16 @@ namespace CodeAnalyzer
                         break;
                     case 6:
                         if (text.Equals(" ")) continue;
-                        if (text.Equals("("))
+                        if (text.Equals(")"))
                         {
                             baseParameters += text;
                             functionRequirement = 7;
                             break;
                         }
-                        functionRequirement = -1; // failed constructor syntax
-                        break;
-                    case 7:
-                        if (text.Equals(" ")) continue;
-                        if (text.Equals(")"))
-                        {
-                            baseParameters += text;
-                            functionRequirement = 8;
-                            break;
-                        }
-                        if (!baseParameters[baseParameters.Length - 1].Equals('(') && !text.Equals(",")) parameters += " ";
+                        if (!baseParameters[baseParameters.Length - 1].Equals('(') && !text.Equals(",")) baseParameters += " ";
                         baseParameters += text;
                         break;
-                    case 8:
+                    case 7:
                         if (text.Equals(" ")) continue;
                         functionRequirement = -1; // failed constructor syntax
                         break;
@@ -857,10 +826,10 @@ namespace CodeAnalyzer
                 else if (text.Equals("]") || text.Equals(">")) brackets--;
             }
 
-            if (functionRequirement == 4 || functionRequirement == 8) // function signature detected
+            if (functionRequirement == 3 || functionRequirement == 7) // constructor signature detected
             {
-                stringBuilder.Clear();
                 this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+                this.ClearStringBuilder();
 
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
@@ -1031,7 +1000,7 @@ namespace CodeAnalyzer
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("if");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("if") && elseIfScope == 0) // check if the next statement starts an "if"
                     {
                         ifScope = 1;
@@ -1071,7 +1040,7 @@ namespace CodeAnalyzer
                 case 5:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else if");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("else")) // check if the next statement starts an "else if"
                     {
                         elseIfScope = 1;
@@ -1098,7 +1067,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("else")) // check if the next statement starts an "else"
                     {
                         elseScope = 1;
@@ -1146,7 +1115,7 @@ namespace CodeAnalyzer
                 case 8:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("for");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("for")) // check if the next statement starts a "for"
                     {
                         forScope = 1;
@@ -1182,7 +1151,7 @@ namespace CodeAnalyzer
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("foreach");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("foreach")) // check if the next statement starts a "foreach"
                     {
                         forEachScope = 1;
@@ -1223,7 +1192,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("while");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("while")) // check if the next statement starts a "while"
                     {
                         whileScope = 1;
@@ -1245,7 +1214,7 @@ namespace CodeAnalyzer
                 case 1:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("do while");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     if (entry.Equals("do")) doWhileScope = 1; // check if the next statement starts a "do while"
                     else doWhileScope = 0; // reset the doWhileScope rule
                     return true;
@@ -1282,7 +1251,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("switch");
-                    stringBuilder.Clear();
+                    this.ClearStringBuilder();
                     switchScope = 0; // reset the switchScope rule
                     return true;
             }
@@ -1334,64 +1303,76 @@ namespace CodeAnalyzer
             return false;
         }
 
-        private StringBuilder UpdateStringBuilder(StringBuilder stringBuilder, string entry)
+        private void AppendToStringBuilder(object text)
+        {
+            stringBuilder.Append(text);
+            stringBuilderSize++;
+        }
+
+        private void ClearStringBuilder()
+        {
+            stringBuilder.Clear();
+            stringBuilderSize = 0;
+        }
+
+        private void UpdateStringBuilder(string entry)
         {
             if (!entry.Equals(" "))
             {
                 if (entry.Equals(";") || entry.Equals("}") || entry.Equals("{"))
                 {
-                    stringBuilder.Clear();
-                    return stringBuilder;
+                    this.ClearStringBuilder();
+                    return;
                 }
-                if (stringBuilder.Length > 0) stringBuilder.Append(" ");
-                stringBuilder.Append(entry);
+                if (stringBuilder.Length > 0) this.AppendToStringBuilder(" ");
+                this.AppendToStringBuilder(entry);
             }
-            return stringBuilder;
         }
 
         private void RemoveFunctionSignatureFromTextData(int size)
         {
             if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass) 
-                    || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
-                ((ProgramDataType)typeStack.Peek()).TextData 
-                    = ((ProgramDataType)typeStack.Peek()).TextData.GetRange(0, ((ProgramDataType)typeStack.Peek()).TextData.Count - size);
+                || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
+            {
+                int textDataIndex = ((ProgramDataType)typeStack.Peek()).TextData.Count - 1; // last index of TextData
+                while (textDataIndex >= 0 && !((ProgramDataType)typeStack.Peek()).TextData[textDataIndex].Equals(")")) textDataIndex--; // get the index of the last closing parentheses
+                size += ((ProgramDataType)typeStack.Peek()).TextData.Count - textDataIndex - 1;
+                ((ProgramDataType)typeStack.Peek()).TextData
+                    = ((ProgramDataType)typeStack.Peek()).TextData.GetRange(0, ((ProgramDataType)typeStack.Peek()).TextData.Count - size); // remove function signature
+            }
         }
     }
 
     class RelationshipProcessor
     {
-
-        ProgramClassType programClassType;
         CodeAnalysisData codeAnalysisData;
-
-        private readonly Stack<string> scopeStack = new Stack<string>();
+        ProgramClass programClass;
         
         public void ProcessRelationships(ProgramClassType programClassType, CodeAnalysisData codeAnalysisData)
         {
-            int index;
+            if (programClassType.GetType() != typeof(ProgramClass)) return; // interfaces will only collect subclasses
 
-            this.programClassType = programClassType;
             this.codeAnalysisData = codeAnalysisData;
+            this.programClass = (ProgramClass)programClassType;
 
-            if (programClassType.GetType() == typeof(ProgramInterface)) return; // interfaces will only collect subclasses
+            this.SetInheritanceRelationships(); // get the superclass/subclass data from the beginning of the class text
 
-            index = this.SetSuperAndSubclasses(); // get the superclass/subclass info from the beginning of the class text
+            // (1) get the aggregation data from the class text and text of all children
+            // (2) get the using data from the parameters fields of all child functions
+            this.SetAggregationAndUsingRelationships(this.programClass);
 
-
-
-            // TODO
         }
 
-        private int SetSuperAndSubclasses()
+        private void SetInheritanceRelationships()
         {
             string entry;
             int index;
             bool hasSuperclasses = false;
             int brackets = 0;
 
-            for (index = 0;  index < programClassType.TextData.Count; index++)
+            for (index = 0;  index < programClass.TextData.Count; index++)
             {
-                entry = programClassType.TextData[index];
+                entry = programClass.TextData[index];
 
                 if (!hasSuperclasses)
                 {
@@ -1403,7 +1384,10 @@ namespace CodeAnalyzer
                 }
 
                 if (entry.Equals("{"))
-                    return ++index;
+                {
+                    programClass.TextData = programClass.TextData.GetRange(++index, programClass.TextData.Count - index);
+                    return;
+                }
 
                 if (entry.Equals("[") || entry.Equals("<"))
                 {
@@ -1421,19 +1405,61 @@ namespace CodeAnalyzer
 
                 if (hasSuperclasses)
                 {
-                    if (codeAnalysisData.ProgramClassTypes.Contains(entry))
+                    if (programClass.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
                     {
                         ProgramClassType super = codeAnalysisData.ProgramClassTypes[entry];
-                        super.SubClasses.Add(programClassType);
-                        ((ProgramClass)programClassType).SuperClasses.Add(super);
-                        programClassType.TextData.RemoveAt(index);
+                        super.SubClasses.Add(programClass);
+                        programClass.SuperClasses.Add(super);
+                        programClass.TextData.RemoveAt(index);
+                    }
+                }
+            }
+        }
+
+        private void SetAggregationAndUsingRelationships(ProgramDataType programDataType)
+        {
+            // get the aggregation data
+            foreach (string entry in programDataType.TextData)
+            {
+                if (programClass.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
+                {
+                    ProgramClassType owned = codeAnalysisData.ProgramClassTypes[entry];
+                    if (!programClass.OwnedClasses.Contains(owned) && owned.GetType() == typeof(ProgramClass))
+                    {
+                        ((ProgramClass)owned).OwnedByClasses.Add(programClass);
+                        programClass.OwnedClasses.Add(owned);
                     }
                 }
             }
 
-            return index;
+            // get the using data
+            if (programDataType.GetType() == typeof(ProgramFunction))
+            {
+                if (((ProgramFunction)programDataType).Parameters.Count > 0)
+                {
+                    foreach (string parameter in ((ProgramFunction)programDataType).Parameters)
+                    {
+                        if (programClass.Name != parameter && codeAnalysisData.ProgramClassTypes.Contains(parameter))
+                        {
+                            ProgramClassType used = codeAnalysisData.ProgramClassTypes[parameter];
+                            if (!programClass.UsedClasses.Contains(used))
+                            {
+                                used.UsedByClasses.Add(programClass);
+                                programClass.UsedClasses.Add(used);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // repeat for each child, grandchild, etc.
+            foreach (ProgramType programType in programDataType.ChildList)
+            {
+                if (programType.GetType() == typeof(ProgramClass) || programType.GetType() == typeof(ProgramFunction))
+                {
+                    this.SetAggregationAndUsingRelationships((ProgramDataType)programType);
+                }
+            }
         }
-
-
     }
 }
