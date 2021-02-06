@@ -75,7 +75,7 @@ namespace CodeAnalyzer
                 relationshipProcessor.ProcessRelationships(programClassType, this.codeAnalysisData);
             }
 
-            /*Console.Write("\n\n");
+            Console.Write("\n\n");
             foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
             {
                 Console.Write(programClassType.Name + " \n\n| ");
@@ -87,8 +87,9 @@ namespace CodeAnalyzer
             }
 
             Console.Write("\n\n");
+
             /* -------------------- Printing the Output Data -------------------- */
-            OutputWriter outputWriter = new OutputWriter();
+            /*OutputWriter outputWriter = new OutputWriter();
             if (this.inputSessionData.PrintToXml)
             {
                 outputWriter.PrintToFile(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);

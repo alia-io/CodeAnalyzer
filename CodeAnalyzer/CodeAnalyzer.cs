@@ -207,7 +207,8 @@ namespace CodeAnalyzer
                     continue;
 
                 /* ---------- Add entry to current ProgramDataType's text list ---------- */
-                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
+                if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass)
+                    || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
                     ((ProgramDataType)typeStack.Peek()).TextData.Add(entry);
 
                 /* ---------- Check for the end of an existing scope ---------- */
@@ -221,7 +222,6 @@ namespace CodeAnalyzer
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
-                            //if (currentProgramClassTypes.Count > 0) currentProgramClassTypes.RemoveAt(currentProgramClassTypes.Count - 1);
                             stringBuilder.Clear();
                             return index;
                         }
@@ -1351,10 +1351,10 @@ namespace CodeAnalyzer
 
         private void RemoveFunctionSignatureFromTextData(int size)
         {
-            if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
-                for (int i = 0; i < size; i++)
-                    if (((ProgramDataType)typeStack.Peek()).TextData.Count > 0)
-                        ((ProgramDataType)typeStack.Peek()).TextData.RemoveAt(((ProgramDataType)typeStack.Peek()).TextData.Count - 1);
+            if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass) 
+                    || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
+                ((ProgramDataType)typeStack.Peek()).TextData 
+                    = ((ProgramDataType)typeStack.Peek()).TextData.GetRange(0, ((ProgramDataType)typeStack.Peek()).TextData.Count - size);
         }
     }
 
