@@ -898,67 +898,67 @@ namespace CodeAnalyzer
 
             /* ---------- Check "if" scope ---------- */
             if (ifScope > 0)
+            {
                 if (this.CheckIfScope(entry))
-                {
                     scopeOpener = true;
-                    ifScopeChecked = true;
-                }
+                ifScopeChecked = true;
+            }
 
             /* ---------- Check "else if" scope ---------- */
             if (elseIfScope > 0)
+            {
                 if (this.CheckElseIfScope(entry))
-                {
                     scopeOpener = true;
-                    elseIfScopeChecked = true;
-                }
+                elseIfScopeChecked = true;
+            }
 
             /* ---------- Check "else" scope ---------- */
             if (elseScope > 0)
+            {
                 if (this.CheckElseScope(entry))
-                {
                     scopeOpener = true;
-                    elseScopeChecked = true;
-                }
+                elseScopeChecked = true;
+            }
 
             /* ---------- Check "for" scope ---------- */
             if (forScope > 0)
+            {
                 if (this.CheckForScope(entry))
-                {
                     scopeOpener = true;
-                    forScopeChecked = true;
-                }
+                forScopeChecked = true;
+            }
 
             /* ---------- Check "foreach" scope ---------- */
             if (forEachScope > 0)
+            {
                 if (this.CheckForEachScope(entry))
-                {
                     scopeOpener = true;
-                    forEachScopeChecked = true;
-                }
+                forEachScopeChecked = true;
+            }
 
             /* ---------- Check "while" scope ---------- */
             if (whileScope > 0)
+            {
                 if (this.CheckWhileScope(entry))
-                {
                     scopeOpener = true;
-                    whileScopeChecked = true;
-                }
+                whileScopeChecked = true;
+            }
 
             /* ---------- Check "do while" scope ---------- */
             if (doWhileScope > 0)
+            {
                 if (this.CheckDoWhileScope(entry))
-                {
                     scopeOpener = true;
-                    doWhileScopeChecked = true;
-                }
+                doWhileScopeChecked = true;
+            }
 
             /* ---------- Check "switch" scope ---------- */
             if (switchScope > 0)
+            {
                 if (this.CheckSwitchScope(entry))
-                {
                     scopeOpener = true;
-                    switchScopeChecked = true;
-                }
+                switchScopeChecked = true;
+            }
 
             /* ---------- Check "if" scope ---------- */
             if (!ifScopeChecked)

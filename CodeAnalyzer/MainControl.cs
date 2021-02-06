@@ -69,13 +69,10 @@ namespace CodeAnalyzer
             }
 
             /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
-            if (this.inputSessionData.SetRelationshipData)
+            foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
             {
-                foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
-                {
-                    RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
-                    relationshipProcessor.ProcessRelationships(programClassType, this.codeAnalysisData);
-                }
+                RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
+                relationshipProcessor.ProcessRelationships(programClassType, this.codeAnalysisData);
             }
 
             /*Console.Write("\n\n");

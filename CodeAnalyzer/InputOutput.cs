@@ -213,7 +213,6 @@ namespace CodeAnalyzer
             {
                 Console.Write("<function name = \"" + programType.Name + "\">");
                 tabs++;
-
                 PrintTabs();
                 Console.Write("<size>" + ((ProgramFunction)programType).Size + "</size>");
 
