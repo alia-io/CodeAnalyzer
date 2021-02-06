@@ -10,20 +10,17 @@ namespace CodeAnalyzer
     class CodeAnalysisData
     {
         public List<ProgramFile> ProcessedFiles { get; }
-        public ProgramObjectTypeCollection ProgramObjectTypes { get; }
+        public ProgramClassTypeCollection ProgramClassTypes { get; }
 
         public CodeAnalysisData()
         {
             this.ProcessedFiles = new List<ProgramFile>();
-            this.ProgramObjectTypes = new ProgramObjectTypeCollection();
+            this.ProgramClassTypes = new ProgramClassTypeCollection();
         }
 
         public void AddFile(ProgramFile file) { this.ProcessedFiles.Add(file); }
-        public void AddObject(ProgramClass programClass) { this.ProgramObjectTypes.Add(programClass); }
-
-        //public void AddObject(ProgramInterface programInterface) { this.ProgramObjectTypes.Add(programInterface); }
-        //public void AddObject(ProgramStruct programStruct) { this.ProgramObjectTypes.Add(programStruct); }
-        //public void AddObject(ProgramEnum programEnum) { this.ProgramObjectTypes.Add(programEnum); }
+        public void AddClass(ProgramClass programClass) { this.ProgramClassTypes.Add(programClass); }
+        public void AddInterface(ProgramInterface programInterface) { this.ProgramClassTypes.Add(programInterface); }
     }
 
     public class InputSessionData

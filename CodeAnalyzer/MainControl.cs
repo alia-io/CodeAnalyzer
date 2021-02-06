@@ -71,18 +71,18 @@ namespace CodeAnalyzer
             /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
             if (this.inputSessionData.SetRelationshipData)
             {
-                foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+                foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
                 {
                     RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
-                    relationshipProcessor.ProcessRelationships(programObjectType, this.codeAnalysisData);
+                    relationshipProcessor.ProcessRelationships(programClassType, this.codeAnalysisData);
                 }
             }
 
             /*Console.Write("\n\n");
-            foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+            foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
             {
-                Console.Write(programObjectType.Name + " \n\n| ");
-                foreach (string text in programObjectType.TextData)
+                Console.Write(programClassType.Name + " \n\n| ");
+                foreach (string text in programClassType.TextData)
                 {
                     Console.Write(text + " | ");
                 }
@@ -102,12 +102,12 @@ namespace CodeAnalyzer
             }
 
             // test
-            /*foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+            /*foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
             {
                 Console.Write("\n");
-                Console.Write("\nClass Name: " + programObjectType.Name);
+                Console.Write("\nClass Name: " + programClassType.Name);
                 Console.Write("\n\n| ");
-                foreach (string text in programObjectType.TextData)
+                foreach (string text in programClassType.TextData)
                 {
                     Console.Write(text + " | ");
                 }

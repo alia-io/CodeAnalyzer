@@ -17,7 +17,7 @@ namespace CodeAnalyzer
         private readonly Stack<string> scopeStack = new Stack<string>();
         private readonly Stack<ProgramType> typeStack = new Stack<ProgramType>();
 
-        private readonly List<ProgramObjectType> currentProgramObjects = new List<ProgramObjectType>();  // holds the current ProgramObjects to store text data within
+        //private readonly List<ProgramClassType> currentProgramClassTypes = new List<ProgramClassType>();  // holds the current ProgramClassTypes to store text data within
         private StringBuilder stringBuilder = new StringBuilder("");
 
         /* Scope syntax rules to check for */
@@ -188,8 +188,8 @@ namespace CodeAnalyzer
             }
         }
 
-        /* Processes data within a ObjectType (class, interface, etc) scope */
-        private int ProcessObjectTypeData(int i)
+        /* Processes data within a ProgramClassType (class or interface) scope */
+        private int ProcessProgramClassTypeData(int i)
         {
             string entry;
             int index;
@@ -206,9 +206,9 @@ namespace CodeAnalyzer
                 if (this.StartPlainTextArea(entry))
                     continue;
 
-                /* ---------- Add entry to current objects' text lists ---------- */
-                foreach (ProgramObjectType programObject in currentProgramObjects)
-                    programObject.TextData.Add(entry);
+                /* ---------- Add entry to current ProgramDataType's text list ---------- */
+                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
+                    ((ProgramDataType)typeStack.Peek()).TextData.Add(entry);
 
                 /* ---------- Check for the end of an existing scope ---------- */
                 if (entry.Equals("}"))
@@ -221,7 +221,7 @@ namespace CodeAnalyzer
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
-                            if (currentProgramObjects.Count > 0) currentProgramObjects.RemoveAt(currentProgramObjects.Count - 1);
+                            //if (currentProgramClassTypes.Count > 0) currentProgramClassTypes.RemoveAt(currentProgramClassTypes.Count - 1);
                             stringBuilder.Clear();
                             return index;
                         }
@@ -281,9 +281,9 @@ namespace CodeAnalyzer
                 if (this.StartPlainTextArea(entry))
                     continue;
 
-                /* ---------- Add entry to current objects' text lists ---------- */
-                foreach (ProgramObjectType programObject in currentProgramObjects)
-                    programObject.TextData.Add(entry);
+                /* ---------- Add entry to current ProgramDataType's text list ---------- */
+                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
+                    ((ProgramDataType)typeStack.Peek()).TextData.Add(entry);
 
                 /* ---------- Check for a new line ---------- */
                 if (entry.Equals(" ") && typeStack.Peek().GetType() == typeof(ProgramFunction))
@@ -329,36 +329,7 @@ namespace CodeAnalyzer
                 /* ---------- Check for opening scope statements ---------- */
                 if (!entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
                 {
-                    /* ---------- Check "if" scope ---------- */
-                    if (this.CheckIfScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "else if" scope ---------- */
-                    if (this.CheckElseIfScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "else" scope ---------- */
-                    if (this.CheckElseScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "for" scope ---------- */
-                    if (this.CheckForScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "foreach" scope ---------- */
-                    if (this.CheckForEachScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "while" scope ---------- */
-                    if (this.CheckWhileScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "do" scope ---------- */
-                    if (this.CheckDoWhileScope(entry))
-                        scopeOpener = true;
-
-                    /* ---------- Check "switch" scope ---------- */
-                    if (this.CheckSwitchScope(entry))
+                    if (this.CheckScopes(entry))
                         scopeOpener = true;
                 }
 
@@ -450,10 +421,8 @@ namespace CodeAnalyzer
                 if (this.StartPlainTextArea(entry))
                     continue;
 
-                /* ---------- Add entry to current objects' text lists ---------- */
+                /* ---------- Add entry to class's TextData list ---------- */
                 classText.Add(entry);
-                foreach (ProgramObjectType programObject in currentProgramObjects)
-                    programObject.TextData.Add(entry);
 
                 if (entry.Equals("{"))
                 {
@@ -488,10 +457,9 @@ namespace CodeAnalyzer
             ProgramClass programClass = new ProgramClass(stringBuilder.ToString(), classModifiers);
             stringBuilder.Clear();
 
-            // add text/inheritance data, and add class to general ObjectType list
+            // add text/inheritance data, and add class to general ProgramClassType list
             programClass.TextData = classText;
-            codeAnalysisData.AddObject(programClass);
-            currentProgramObjects.Add(programClass);
+            codeAnalysisData.AddClass(programClass);
 
             // add new class to its parent's ChildList
             if (typeStack.Count > 0)  typeStack.Peek().ChildList.Add(programClass);
@@ -499,7 +467,7 @@ namespace CodeAnalyzer
 
             typeStack.Push(programClass); // push the class onto typeStack
 
-            return this.ProcessObjectTypeData(++index); // reads the rest of the class
+            return this.ProcessProgramClassTypeData(++index); // reads the rest of the class
         }
 
         /* Used to detect the syntax for a function signature */
@@ -611,6 +579,8 @@ namespace CodeAnalyzer
             if (functionRequirement == 4) // function signature detected
             {
                 stringBuilder.Clear();
+                this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
                 // add new function to its parent's ChildList
@@ -708,6 +678,8 @@ namespace CodeAnalyzer
             if (functionRequirement == 4) // deconstructor signature detected
             {
                 stringBuilder.Clear();
+                this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
                 // add new function to its parent's ChildList
@@ -888,6 +860,8 @@ namespace CodeAnalyzer
             if (functionRequirement == 4 || functionRequirement == 8) // function signature detected
             {
                 stringBuilder.Clear();
+                this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
+
                 ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnType, parameters, baseParameters);
 
                 // add new function to its parent's ChildList
@@ -909,6 +883,126 @@ namespace CodeAnalyzer
 
         /* ---------- Scope Detectors (within functions) ---------- */
 
+        private bool CheckScopes(string entry)
+        {
+            bool scopeOpener = false;
+
+            bool ifScopeChecked = false;
+            bool elseIfScopeChecked = false;
+            bool elseScopeChecked = false;
+            bool forScopeChecked = false;
+            bool forEachScopeChecked = false;
+            bool whileScopeChecked = false;
+            bool doWhileScopeChecked = false;
+            bool switchScopeChecked = false;
+
+            /* ---------- Check "if" scope ---------- */
+            if (ifScope > 0)
+                if (this.CheckIfScope(entry))
+                {
+                    scopeOpener = true;
+                    ifScopeChecked = true;
+                }
+
+            /* ---------- Check "else if" scope ---------- */
+            if (elseIfScope > 0)
+                if (this.CheckElseIfScope(entry))
+                {
+                    scopeOpener = true;
+                    elseIfScopeChecked = true;
+                }
+
+            /* ---------- Check "else" scope ---------- */
+            if (elseScope > 0)
+                if (this.CheckElseScope(entry))
+                {
+                    scopeOpener = true;
+                    elseScopeChecked = true;
+                }
+
+            /* ---------- Check "for" scope ---------- */
+            if (forScope > 0)
+                if (this.CheckForScope(entry))
+                {
+                    scopeOpener = true;
+                    forScopeChecked = true;
+                }
+
+            /* ---------- Check "foreach" scope ---------- */
+            if (forEachScope > 0)
+                if (this.CheckForEachScope(entry))
+                {
+                    scopeOpener = true;
+                    forEachScopeChecked = true;
+                }
+
+            /* ---------- Check "while" scope ---------- */
+            if (whileScope > 0)
+                if (this.CheckWhileScope(entry))
+                {
+                    scopeOpener = true;
+                    whileScopeChecked = true;
+                }
+
+            /* ---------- Check "do while" scope ---------- */
+            if (doWhileScope > 0)
+                if (this.CheckDoWhileScope(entry))
+                {
+                    scopeOpener = true;
+                    doWhileScopeChecked = true;
+                }
+
+            /* ---------- Check "switch" scope ---------- */
+            if (switchScope > 0)
+                if (this.CheckSwitchScope(entry))
+                {
+                    scopeOpener = true;
+                    switchScopeChecked = true;
+                }
+
+            /* ---------- Check "if" scope ---------- */
+            if (!ifScopeChecked)
+                if (this.CheckIfScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "else if" scope ---------- */
+            if (!elseIfScopeChecked)
+                if (this.CheckElseIfScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "else" scope ---------- */
+            if (!elseScopeChecked)
+                if (this.CheckElseScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "for" scope ---------- */
+            if (!forScopeChecked)
+                if (this.CheckForScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "foreach" scope ---------- */
+            if (!forEachScopeChecked)
+                if (this.CheckForEachScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "while" scope ---------- */
+            if (!whileScopeChecked)
+                if (this.CheckWhileScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "do while" scope ---------- */
+            if (!doWhileScopeChecked)
+                if (this.CheckDoWhileScope(entry))
+                    scopeOpener = true;
+
+            /* ---------- Check "switch" scope ---------- */
+            if (!switchScopeChecked)
+                if (this.CheckSwitchScope(entry))
+                    scopeOpener = true;
+
+            return scopeOpener;
+        }
+
         private bool CheckIfScope(string entry)
         {
             switch (ifScope)
@@ -928,11 +1022,16 @@ namespace CodeAnalyzer
                     ifScope = 3;
                     break;
                 case 3:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) ifScope = 4;
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count)
+                    {
+
+                        ifScope = 4;
+                    }
                     break;
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("if");
+                    stringBuilder.Clear();
                     if (entry.Equals("if") && elseIfScope == 0) // check if the next statement starts an "if"
                     {
                         ifScope = 1;
@@ -972,6 +1071,7 @@ namespace CodeAnalyzer
                 case 5:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else if");
+                    stringBuilder.Clear();
                     if (entry.Equals("else")) // check if the next statement starts an "else if"
                     {
                         elseIfScope = 1;
@@ -998,6 +1098,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("else");
+                    stringBuilder.Clear();
                     if (entry.Equals("else")) // check if the next statement starts an "else"
                     {
                         elseScope = 1;
@@ -1045,6 +1146,7 @@ namespace CodeAnalyzer
                 case 8:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("for");
+                    stringBuilder.Clear();
                     if (entry.Equals("for")) // check if the next statement starts a "for"
                     {
                         forScope = 1;
@@ -1080,6 +1182,7 @@ namespace CodeAnalyzer
                 case 4:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("foreach");
+                    stringBuilder.Clear();
                     if (entry.Equals("foreach")) // check if the next statement starts a "foreach"
                     {
                         forEachScope = 1;
@@ -1120,6 +1223,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("while");
+                    stringBuilder.Clear();
                     if (entry.Equals("while")) // check if the next statement starts a "while"
                     {
                         whileScope = 1;
@@ -1141,6 +1245,7 @@ namespace CodeAnalyzer
                 case 1:
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("do while");
+                    stringBuilder.Clear();
                     if (entry.Equals("do")) doWhileScope = 1; // check if the next statement starts a "do while"
                     else doWhileScope = 0; // reset the doWhileScope rule
                     return true;
@@ -1177,6 +1282,7 @@ namespace CodeAnalyzer
                     }
                     ((ProgramFunction)typeStack.Peek()).Complexity++;
                     scopeStack.Push("switch");
+                    stringBuilder.Clear();
                     switchScope = 0; // reset the switchScope rule
                     return true;
             }
@@ -1242,22 +1348,36 @@ namespace CodeAnalyzer
             }
             return stringBuilder;
         }
+
+        private void RemoveFunctionSignatureFromTextData(int size)
+        {
+            if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
+                for (int i = 0; i < size; i++)
+                    if (((ProgramDataType)typeStack.Peek()).TextData.Count > 0)
+                        ((ProgramDataType)typeStack.Peek()).TextData.RemoveAt(((ProgramDataType)typeStack.Peek()).TextData.Count - 1);
+        }
     }
 
     class RelationshipProcessor
     {
 
-        ProgramObjectType programObjectType;
+        ProgramClassType programClassType;
         CodeAnalysisData codeAnalysisData;
 
-        private Stack<string> scopeStack = new Stack<string>();
+        private readonly Stack<string> scopeStack = new Stack<string>();
         
-        public void ProcessRelationships(ProgramObjectType programObjectType, CodeAnalysisData codeAnalysisData)
+        public void ProcessRelationships(ProgramClassType programClassType, CodeAnalysisData codeAnalysisData)
         {
-            this.programObjectType = programObjectType;
+            int index;
+
+            this.programClassType = programClassType;
             this.codeAnalysisData = codeAnalysisData;
 
-            int index = this.SetSuperAndSubclasses(); // get the superclass/subclass info from the beginning of the class text
+            if (programClassType.GetType() == typeof(ProgramInterface)) return; // interfaces will only collect subclasses
+
+            index = this.SetSuperAndSubclasses(); // get the superclass/subclass info from the beginning of the class text
+
+
 
             // TODO
         }
@@ -1269,9 +1389,9 @@ namespace CodeAnalyzer
             bool hasSuperclasses = false;
             int brackets = 0;
 
-            for (index = 0;  index < programObjectType.TextData.Count; index++)
+            for (index = 0;  index < programClassType.TextData.Count; index++)
             {
-                entry = programObjectType.TextData[index];
+                entry = programClassType.TextData[index];
 
                 if (!hasSuperclasses)
                 {
@@ -1301,11 +1421,12 @@ namespace CodeAnalyzer
 
                 if (hasSuperclasses)
                 {
-                    if (codeAnalysisData.ProgramObjectTypes.Contains(entry))
+                    if (codeAnalysisData.ProgramClassTypes.Contains(entry))
                     {
-                        ProgramObjectType super = codeAnalysisData.ProgramObjectTypes[entry];
-                        super.SubObjects.Add(programObjectType);
-                        programObjectType.SuperObjects.Add(super);
+                        ProgramClassType super = codeAnalysisData.ProgramClassTypes[entry];
+                        super.SubClasses.Add(programClassType);
+                        ((ProgramClass)programClassType).SuperClasses.Add(super);
+                        programClassType.TextData.RemoveAt(index);
                     }
                 }
             }

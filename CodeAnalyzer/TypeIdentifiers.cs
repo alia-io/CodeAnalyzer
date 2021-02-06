@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace CodeAnalyzer
 {
 
-    public class ProgramType
+    public abstract class ProgramType
     {
         public virtual string Name { get; set; }
         public List<ProgramType> ChildList { get; set; }
@@ -19,10 +19,39 @@ namespace CodeAnalyzer
         }
     }
 
+    public abstract class ProgramDataType : ProgramType   // ProgramDataType includes classes, interfaces, and functions (the types that hold data)
+    {
+        public List<string> TextData { get; set; }
+        public string Modifiers { get; }
+        public ProgramDataType(string name, string modifiers) : base(name)
+        {
+            this.Modifiers = modifiers;
+            this.TextData = new List<string>();
+        }
+    }
+
+    public abstract class ProgramClassType : ProgramDataType     // ProgramClassType includes all classes and interfaces
+    {
+        public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
+        public List<ProgramClassType> SubClasses { get; }       // *Inheritance* - ProgramClass(es) that this class is inherited by
+
+        public ProgramClassType(string name, string modifiers) : base(name, modifiers) { this.SubClasses = new List<ProgramClassType>(); }
+
+        public override string Name
+        {
+            get { return base.Name; }
+            set
+            {
+                if (ProgramClassCollection != null) ProgramClassCollection.NotifyNameChange(this, value);
+                base.Name = value;
+            }
+        }
+    }
+
     public class ProgramFile : ProgramType
     {
-        public string FilePath { get; set; }
-        public string FileText { get; set; }
+        public string FilePath { get; }
+        public string FileText { get; }
         public List<string> FileTextData { get; }
         public ProgramFile(string filePath, string fileName, string fileText) : base(fileName)
         {
@@ -33,57 +62,33 @@ namespace CodeAnalyzer
     }
 
     public class ProgramNamespace : ProgramType { public ProgramNamespace(string name) : base(name) { } }
-
-    public class ProgramObjectType : ProgramType     // ProgramObject includes all classes, interfaces, structs(?), and enums(?)
+    public class ProgramClass : ProgramClassType 
     {
-        public ProgramObjectTypeCollection ProgramObjectCollection { get; internal set; }
-        public string Modifiers { get; }
-        public List<string> TextData { get; set; }
-        public List<ProgramObjectType> SuperObjects { get; }     // *Inheritance* - ProgramObject(s) that this class inherits from
-        public List<ProgramObjectType> SubObjects { get; }       // *Inheritance* - ProgramObject(s) that this class is inherited by
-        public List<ProgramObjectType> OwnedObjects { get; }     // *Composition/Aggregation* - ProgramObject(s) that are "part of" (owned by) this ProgramObject
-        public List<ProgramObjectType> OwnedByObjects { get; }   // *Composition/Aggregation* - ProgramObject(s) that this class is "part of" ProgramObject
-        public List<ProgramObjectType> UsedObjects { get; }      // *Using* - ProgramObject(s) that this ProgramObject uses
-        public List<ProgramObjectType> UsedByObjects { get; }    // *Using* - ProgramObject(s) that this ProgramObject is used by
-
-        public ProgramObjectType(string name, string modifiers) : base(name)
+        public List<ProgramClassType> SuperClasses { get; }     // *Inheritance* - ProgramClass(es) that this class inherits from
+        public List<ProgramClassType> OwnedClasses { get; }     // *Composition/Aggregation* - ProgramClass(es) that are "part of" (owned by) this ProgramClass
+        public List<ProgramClassType> OwnedByClasses { get; }   // *Composition/Aggregation* - ProgramClass(es) that this ProgramClass is "part of"
+        public List<ProgramClassType> UsedClasses { get; }      // *Using* - ProgramClass(es) that this ProgramClass uses
+        public List<ProgramClassType> UsedByClasses { get; }    // *Using* - ProgramClass(es) that this ProgramClass is used by
+        public ProgramClass(string name, string modifiers) : base(name, modifiers) 
         {
-            this.Modifiers = modifiers;
-            this.SuperObjects = new List<ProgramObjectType>();
-            this.SubObjects = new List<ProgramObjectType>();
-            this.OwnedObjects = new List<ProgramObjectType>();
-            this.OwnedByObjects = new List<ProgramObjectType>();
-            this.UsedObjects = new List<ProgramObjectType>();
-            this.UsedByObjects = new List<ProgramObjectType>();
-        }
-
-        public override string Name
-        {
-            get { return base.Name; }
-            set
-            {
-                if (ProgramObjectCollection != null) ProgramObjectCollection.NotifyNameChange(this, value);
-                base.Name = value;
-            }
-        }
+            this.SuperClasses = new List<ProgramClassType>();
+            this.OwnedClasses = new List<ProgramClassType>();
+            this.OwnedByClasses = new List<ProgramClassType>();
+            this.UsedClasses = new List<ProgramClassType>();
+            this.UsedByClasses = new List<ProgramClassType>();
+        } 
     }
+    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
 
-    public class ProgramClass : ProgramObjectType { public ProgramClass(string name, string modifiers) : base(name, modifiers) { } }
-    public class ProgramInterface : ProgramObjectType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
-    //public class ProgramStruct : ProgramObjectType { public ProgramStruct(string name, string modifiers) : base(name, modifiers) { } }
-    //public class ProgramEnum : ProgramObjectType { public ProgramEnum(string name, string modifiers) : base(name, modifiers) { } }
-
-    public class ProgramFunction : ProgramType
+    public class ProgramFunction : ProgramDataType
     {
-        public string Modifiers { get; set; }
-        public string ReturnType { get; set; }
-        public string Parameters { get; set; }
-        public string BaseParameters { get; set; }
+        public string ReturnType { get; }
+        public string Parameters { get; }
+        public string BaseParameters { get; }
         public int Size { get; set; }
         public int Complexity { get; set; }
-        public ProgramFunction(string name, string modifiers, string returnType, string parameters, string baseParameters) : base(name)
+        public ProgramFunction(string name, string modifiers, string returnType, string parameters, string baseParameters) : base(name, modifiers)
         {
-            this.Modifiers = modifiers;
             this.ReturnType = returnType;
             this.Parameters = parameters;
             this.BaseParameters = baseParameters;
@@ -93,29 +98,29 @@ namespace CodeAnalyzer
     }
 
     /* KeyedCollection for ProgramClassType */
-    public class ProgramObjectTypeCollection : KeyedCollection<string, ProgramObjectType>
+    public class ProgramClassTypeCollection : KeyedCollection<string, ProgramClassType>
     {
-        internal void NotifyNameChange(ProgramObjectType programObjectType, string newName) =>
-            this.ChangeItemKey(programObjectType, newName);
-        protected override string GetKeyForItem(ProgramObjectType item) => item.Name;
-        protected override void InsertItem(int index, ProgramObjectType item)
+        internal void NotifyNameChange(ProgramClassType programClassType, string newName) =>
+            this.ChangeItemKey(programClassType, newName);
+        protected override string GetKeyForItem(ProgramClassType item) => item.Name;
+        protected override void InsertItem(int index, ProgramClassType item)
         {
             base.InsertItem(index, item);
-            item.ProgramObjectCollection = this;
+            item.ProgramClassCollection = this;
         }
-        protected override void SetItem(int index, ProgramObjectType item)
+        protected override void SetItem(int index, ProgramClassType item)
         {
             base.SetItem(index, item);
-            item.ProgramObjectCollection = this;
+            item.ProgramClassCollection = this;
         }
         protected override void RemoveItem(int index)
         {
-            this[index].ProgramObjectCollection = null;
+            this[index].ProgramClassCollection = null;
             base.RemoveItem(index);
         }
         protected override void ClearItems()
         {
-            foreach (ProgramObjectType programObjectType in this) programObjectType.ProgramObjectCollection = null;
+            foreach (ProgramClassType programClassType in this) programClassType.ProgramClassCollection = null;
             base.ClearItems();
         }
     }

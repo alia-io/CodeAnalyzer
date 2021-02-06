@@ -155,46 +155,58 @@ namespace CodeAnalyzer
                 Console.Write("<class name = \"" + programType.Name + "\">");
                 tabs++;
 
-                if (((ProgramClass)programType).SuperObjects.Count > 0)
-                    foreach (ProgramObjectType superclass in ((ProgramClass)programType).SuperObjects)
+                if (((ProgramClass)programType).SuperClasses.Count > 0) // Inheritance, parents
+                    foreach (ProgramClassType superclass in ((ProgramClass)programType).SuperClasses)
                     {
                         PrintTabs();
-                        Console.Write("<superclass>" + superclass.Name + "</superclass>");
+                        Console.Write("<inheritance_parent>" + superclass.Name + "</inheritance_parent>");
                     }
 
-                if (((ProgramClass)programType).SubObjects.Count > 0)
-                    foreach (ProgramObjectType subclass in ((ProgramClass)programType).SubObjects)
+                if (((ProgramClass)programType).SubClasses.Count > 0) // Inheritance, children
+                    foreach (ProgramClassType subclass in ((ProgramClass)programType).SubClasses)
                     {
                         PrintTabs();
-                        Console.Write("<subclass>" + subclass.Name + "</subclass>");
+                        Console.Write("<inheritance_child>" + subclass.Name + "</inheritance_child>");
                     }
 
-                if (((ProgramClass)programType).OwnedObjects.Count > 0)
-                    foreach (ProgramObjectType ownedclass in ((ProgramClass)programType).OwnedObjects)
+                if (((ProgramClass)programType).OwnedByClasses.Count > 0) // Aggregation, parents
+                    foreach (ProgramClassType ownerclass in ((ProgramClass)programType).OwnedByClasses)
                     {
                         PrintTabs();
-                        Console.Write("<ownedclass>" + ownedclass.Name + "</ownedclass>");
+                        Console.Write("<aggregation_parent>" + ownerclass.Name + "</aggregation_parent>");
                     }
 
-                if (((ProgramClass)programType).OwnedByObjects.Count > 0)
-                    foreach (ProgramObjectType ownerclass in ((ProgramClass)programType).OwnedByObjects)
+                if (((ProgramClass)programType).OwnedClasses.Count > 0) // Aggregation, children
+                    foreach (ProgramClassType ownedclass in ((ProgramClass)programType).OwnedClasses)
                     {
                         PrintTabs();
-                        Console.Write("<ownerclass>" + ownerclass.Name + "</ownerclass>");
+                        Console.Write("<aggregation_child>" + ownedclass.Name + "</aggregation_child>");
                     }
 
-                if (((ProgramClass)programType).UsedObjects.Count > 0)
-                    foreach (ProgramObjectType usedclass in ((ProgramClass)programType).UsedObjects)
+                if (((ProgramClass)programType).UsedByClasses.Count > 0) // Using, parents
+                    foreach (ProgramClassType userclass in ((ProgramClass)programType).UsedByClasses)
                     {
                         PrintTabs();
-                        Console.Write("<usedclass>" + usedclass.Name + "</usedclass>");
+                        Console.Write("<using_parent>" + userclass.Name + "</using_parent>");
                     }
 
-                if (((ProgramClass)programType).UsedByObjects.Count > 0)
-                    foreach (ProgramObjectType userclass in ((ProgramClass)programType).UsedByObjects)
+                if (((ProgramClass)programType).UsedClasses.Count > 0) // Using, children
+                    foreach (ProgramClassType usedclass in ((ProgramClass)programType).UsedClasses)
                     {
                         PrintTabs();
-                        Console.Write("<userclass>" + userclass.Name + "</userclass>");
+                        Console.Write("<using_child>" + usedclass.Name + "</using_child>");
+                    }
+            }
+            else if (programType.GetType() == typeof(ProgramInterface))
+            {
+                Console.Write("<interface name = \"" + programType.Name + "\">");
+                tabs++;
+
+                if (((ProgramInterface)programType).SubClasses.Count > 0) // Inheritance, children
+                    foreach (ProgramClassType subclass in ((ProgramInterface)programType).SubClasses)
+                    {
+                        PrintTabs();
+                        Console.Write("<inheritance_child>" + subclass.Name + "</inheritance_child>");
                     }
             }
             else if (programType.GetType() == typeof(ProgramFunction))
@@ -257,11 +269,11 @@ namespace CodeAnalyzer
                         Console.Write("\t");
                     bool comma = false;
                     Console.Write("\t- Superclasses: ");
-                    foreach (ProgramObjectType programObjectType in ((ProgramClass)programType).SuperObjects)
+                    foreach (ProgramClassType programClassType in ((ProgramClass)programType).SuperClasses)
                     {
                         if (comma)
                             Console.Write(", ");
-                        Console.Write(programObjectType.Name);
+                        Console.Write(programClassType.Name);
                         if (!comma)
                             comma = true;
                     }
@@ -270,11 +282,11 @@ namespace CodeAnalyzer
                         Console.Write("\t");
                     comma = false;
                     Console.Write("\t- Subclasses: ");
-                    foreach (ProgramObjectType programObjectType in ((ProgramClass)programType).SubObjects)
+                    foreach (ProgramClassType programClassType in ((ProgramClass)programType).SubClasses)
                     {
                         if (comma)
                             Console.Write(", ");
-                        Console.Write(programObjectType.Name);
+                        Console.Write(programClassType.Name);
                         if (!comma)
                             comma = true;
                     }
