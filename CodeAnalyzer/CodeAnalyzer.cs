@@ -199,10 +199,6 @@ namespace CodeAnalyzer
             for (index = i; index < programFile.FileTextData.Count; index++)
             {
                 entry = programFile.FileTextData[index];
-
-                if (populateObjectList) // add entry to current objects' text lists
-                    foreach (ProgramObjectType programObject in currentProgramObjects)
-                        programObject.TextData.Add(entry);
                 
                 /* ---------- Determine whether to ignore the entry ---------- */
                 if (this.IgnoreEntry(entry))
@@ -211,6 +207,11 @@ namespace CodeAnalyzer
                 /* ---------- If starting an area to ignore, push the entry ---------- */
                 if (this.StartPlainTextArea(entry))
                     continue;
+
+                /* ---------- Add entry to current objects' text lists ---------- */
+                if (populateObjectList)
+                    foreach (ProgramObjectType programObject in currentProgramObjects)
+                        programObject.TextData.Add(entry);
 
                 /* ---------- Check for the end of an existing scope ---------- */
                 if (entry.Equals("}"))
@@ -275,10 +276,6 @@ namespace CodeAnalyzer
                 entry = programFile.FileTextData[index];
                 scopeOpener = false;
 
-                if (populateObjectList) // add entry to current objects' text lists
-                    foreach (ProgramObjectType programObject in currentProgramObjects)
-                        programObject.TextData.Add(entry);
-
                 /* ---------- Determine whether to ignore the entry ---------- */
                 if (this.IgnoreEntry(entry))
                     continue;
@@ -287,8 +284,13 @@ namespace CodeAnalyzer
                 if (this.StartPlainTextArea(entry))
                     continue;
 
+                /* ---------- Add entry to current objects' text lists ---------- */
+                if (populateObjectList)
+                    foreach (ProgramObjectType programObject in currentProgramObjects)
+                        programObject.TextData.Add(entry);
+
                 /* ---------- Check for a new line ---------- */
-                if (!populateObjectList && entry.Equals(" ") && typeStack.Peek().GetType() == typeof(ProgramFunction))
+                if (entry.Equals(" ") && typeStack.Peek().GetType() == typeof(ProgramFunction))
                     ((ProgramFunction)typeStack.Peek()).Size++;
 
                 /* ---------- Check for closing parenthesis ---------- */
@@ -329,7 +331,7 @@ namespace CodeAnalyzer
                 }
 
                 /* ---------- Check for opening scope statements ---------- */
-                if (!populateObjectList && !entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
+                if (!entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
                 {
                     /* ---------- Check "if" scope ---------- */
                     if (this.CheckIfScope(entry))
@@ -443,6 +445,25 @@ namespace CodeAnalyzer
             while (++index < programFile.FileTextData.Count) // get the name of the class
             {
                 entry = programFile.FileTextData[index];
+
+                /* ---------- Determine whether to ignore the entry ---------- */
+                if (this.IgnoreEntry(entry))
+                    continue;
+
+                /* ---------- If starting an area to ignore, push the entry ---------- */
+                if (this.StartPlainTextArea(entry))
+                    continue;
+
+                /* ---------- Add entry to current objects' text lists ---------- */
+                if (populateObjectList)
+                {
+                    classText.Add(entry);
+                    foreach (ProgramObjectType programObject in currentProgramObjects)
+                    {
+                        programObject.TextData.Add(entry);
+                    }
+                }
+
                 if (entry.Equals("{"))
                 {
                     scopeStack.Push("{"); // push the new scope opener onto scopeStack
@@ -471,7 +492,6 @@ namespace CodeAnalyzer
                     if (!entry.Equals(" ")) stringBuilder.Append(entry); // the next entry after "class" will be the name
                     continue;
                 }
-                classText.Add(entry); // save any inheritance data
             }
 
             ProgramClass programClass = new ProgramClass(stringBuilder.ToString(), classModifiers);
@@ -1240,18 +1260,20 @@ namespace CodeAnalyzer
 
         ProgramObjectType programObjectType;
         CodeAnalysisData codeAnalysisData;
+
+        private Stack<string> scopeStack = new Stack<string>();
         
         public void ProcessRelationships(ProgramObjectType programObjectType, CodeAnalysisData codeAnalysisData)
         {
             this.programObjectType = programObjectType;
             this.codeAnalysisData = codeAnalysisData;
 
-            int index = this.SetSuperclasses(); // get the superclass info from the beginning of the class text
+            int index = this.SetSuperAndSubclasses(); // get the superclass/subclass info from the beginning of the class text
 
             // TODO
         }
 
-        private int SetSuperclasses()
+        private int SetSuperAndSubclasses()
         {
             string entry;
             int index;
@@ -1262,8 +1284,6 @@ namespace CodeAnalyzer
             {
                 entry = programObjectType.TextData[index];
 
-                if (entry.Equals(" ")) continue;
-
                 if (!hasSuperclasses)
                 {
                     if (entry.Equals(":"))
@@ -1271,14 +1291,10 @@ namespace CodeAnalyzer
                         hasSuperclasses = true;
                         continue;
                     }
-                    return index;
                 }
 
                 if (entry.Equals("{"))
                     return ++index;
-
-                if (entry.Equals(","))
-                    continue;
 
                 if (entry.Equals("[") || entry.Equals("<"))
                 {
@@ -1292,11 +1308,16 @@ namespace CodeAnalyzer
                     continue;
                 }
 
-                if (codeAnalysisData.ProgramObjectTypes.Contains(entry))
+                if (brackets > 0) continue;
+
+                if (hasSuperclasses)
                 {
-                    ProgramObjectType super = codeAnalysisData.ProgramObjectTypes[entry];
-                    super.SubObjects.Add(programObjectType);
-                    programObjectType.SuperObjects.Add(super);
+                    if (codeAnalysisData.ProgramObjectTypes.Contains(entry))
+                    {
+                        ProgramObjectType super = codeAnalysisData.ProgramObjectTypes[entry];
+                        super.SubObjects.Add(programObjectType);
+                        programObjectType.SuperObjects.Add(super);
+                    }
                 }
             }
 

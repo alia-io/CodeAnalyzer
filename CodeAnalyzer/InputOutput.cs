@@ -125,6 +125,7 @@ namespace CodeAnalyzer
             {
                 this.NavigateProgramTypes_StdOut(programFile, printRelationshipData);
             }
+            Console.Write("\n");
         }
 
         public void PrintToFile(List<ProgramFile> processedFileList, bool printRelationshipData)

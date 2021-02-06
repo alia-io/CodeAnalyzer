@@ -78,6 +78,18 @@ namespace CodeAnalyzer
                 }
             }
 
+            /*Console.Write("\n\n");
+            foreach (ProgramObjectType programObjectType in this.codeAnalysisData.ProgramObjectTypes)
+            {
+                Console.Write(programObjectType.Name + " \n\n| ");
+                foreach (string text in programObjectType.TextData)
+                {
+                    Console.Write(text + " | ");
+                }
+                Console.Write("\n\n");
+            }
+
+            Console.Write("\n\n");
             /* -------------------- Printing the Output Data -------------------- */
             OutputWriter outputWriter = new OutputWriter();
             if (this.inputSessionData.PrintToXml)
