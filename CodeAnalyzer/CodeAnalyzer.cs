@@ -12,7 +12,6 @@ namespace CodeAnalyzer
         /* Saved copies of input input arguments */
         private CodeAnalysisData codeAnalysisData;
         private ProgramFile programFile;
-        bool populateObjectList;
 
         /* Stacks to keep track of the current scope */
         private readonly Stack<string> scopeStack = new Stack<string>();
@@ -33,11 +32,10 @@ namespace CodeAnalyzer
 
         int savedScopeStackCount = 0;
 
-        public void ProcessFile(CodeAnalysisData codeAnalysisData, ProgramFile programFile, bool populateObjectList)
+        public void ProcessFile(CodeAnalysisData codeAnalysisData, ProgramFile programFile)
         {
             this.codeAnalysisData = codeAnalysisData;
             this.programFile = programFile;
-            this.populateObjectList = populateObjectList;
 
             codeAnalysisData.ProcessedFiles.Add(programFile);   // add file to processed files list
 
@@ -209,9 +207,8 @@ namespace CodeAnalyzer
                     continue;
 
                 /* ---------- Add entry to current objects' text lists ---------- */
-                if (populateObjectList)
-                    foreach (ProgramObjectType programObject in currentProgramObjects)
-                        programObject.TextData.Add(entry);
+                foreach (ProgramObjectType programObject in currentProgramObjects)
+                    programObject.TextData.Add(entry);
 
                 /* ---------- Check for the end of an existing scope ---------- */
                 if (entry.Equals("}"))
@@ -285,9 +282,8 @@ namespace CodeAnalyzer
                     continue;
 
                 /* ---------- Add entry to current objects' text lists ---------- */
-                if (populateObjectList)
-                    foreach (ProgramObjectType programObject in currentProgramObjects)
-                        programObject.TextData.Add(entry);
+                foreach (ProgramObjectType programObject in currentProgramObjects)
+                    programObject.TextData.Add(entry);
 
                 /* ---------- Check for a new line ---------- */
                 if (entry.Equals(" ") && typeStack.Peek().GetType() == typeof(ProgramFunction))
@@ -384,7 +380,7 @@ namespace CodeAnalyzer
                 }
 
                 /* ---------- Check for the end of an existing bracketless scope ---------- */
-                if (!populateObjectList && entry.Equals(";") && forScope == 0 && scopeStack.Count > 0 && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
+                if (entry.Equals(";") && forScope == 0 && scopeStack.Count > 0 && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
                 {
                     while (scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
                         || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while")
@@ -455,14 +451,9 @@ namespace CodeAnalyzer
                     continue;
 
                 /* ---------- Add entry to current objects' text lists ---------- */
-                if (populateObjectList)
-                {
-                    classText.Add(entry);
-                    foreach (ProgramObjectType programObject in currentProgramObjects)
-                    {
-                        programObject.TextData.Add(entry);
-                    }
-                }
+                classText.Add(entry);
+                foreach (ProgramObjectType programObject in currentProgramObjects)
+                    programObject.TextData.Add(entry);
 
                 if (entry.Equals("{"))
                 {
@@ -497,12 +488,10 @@ namespace CodeAnalyzer
             ProgramClass programClass = new ProgramClass(stringBuilder.ToString(), classModifiers);
             stringBuilder.Clear();
 
-            if (populateObjectList) // add text/inheritance data, and add class to general ObjectType list
-            {
-                programClass.TextData = classText;
-                codeAnalysisData.AddObject(programClass);
-                currentProgramObjects.Add(programClass);
-            }
+            // add text/inheritance data, and add class to general ObjectType list
+            programClass.TextData = classText;
+            codeAnalysisData.AddObject(programClass);
+            currentProgramObjects.Add(programClass);
 
             // add new class to its parent's ChildList
             if (typeStack.Count > 0)  typeStack.Peek().ChildList.Add(programClass);

@@ -65,7 +65,7 @@ namespace CodeAnalyzer
             while (this.inputSessionData.FileQueue.Count > 0)
             {
                 FileProcessor fileProcessor = new FileProcessor();
-                fileProcessor.ProcessFile(this.codeAnalysisData, this.inputSessionData.FileQueue.Dequeue(), this.inputSessionData.SetRelationshipData);
+                fileProcessor.ProcessFile(this.codeAnalysisData, this.inputSessionData.FileQueue.Dequeue());
             }
 
             /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
