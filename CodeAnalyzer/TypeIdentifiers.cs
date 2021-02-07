@@ -67,6 +67,7 @@ namespace CodeAnalyzer
     }
 
     public class ProgramNamespace : ProgramType { public ProgramNamespace(string name) : base(name) { } }
+
     public class ProgramClass : ProgramClassType 
     {
         public List<ProgramClassType> SuperClasses { get; }     // *Inheritance* - ProgramClass(es) that this class inherits from
@@ -89,6 +90,7 @@ namespace CodeAnalyzer
 
         public override int GetHashCode() { return base.GetHashCode(); }
     }
+
     public class ProgramInterface : ProgramClassType 
     { 
         public ProgramInterface(string name, string modifiers) : base(name, modifiers) { }
@@ -105,7 +107,6 @@ namespace CodeAnalyzer
     public class ProgramFunction : ProgramDataType
     {
         public string ReturnType { get; }
-        //public string Parameters { get; }
         public List<string> Parameters { get; set; }
         public string BaseParameters { get; }
         public int Size { get; set; }
@@ -113,8 +114,7 @@ namespace CodeAnalyzer
         public ProgramFunction(string name, string modifiers, string returnType, List<string> parameters, string baseParameters) : base(name, modifiers)
         {
             this.ReturnType = returnType;
-            //this.Parameters = parameters;
-            this.Parameters = new List<string>();
+            this.Parameters = parameters;
             this.BaseParameters = baseParameters;
             this.Size = 1;
             this.Complexity = 0;

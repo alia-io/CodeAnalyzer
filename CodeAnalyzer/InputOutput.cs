@@ -90,24 +90,21 @@ namespace CodeAnalyzer
         /* Returns true if successful; returns false if invalid argument */
         private bool TestDirectoryPath(string arg)
         {
-            string directoryPath = "";
-
             try
             {
-                directoryPath = Path.GetFullPath(arg);
+                string directoryPath = Path.GetFullPath(arg);
+                if (Directory.Exists(directoryPath))
+                {
+                    if (this.FormattedInput[3].Equals(""))
+                    {
+                        this.FormattedInput[3] = directoryPath;
+                        return true;
+                    }
+                    return false;
+                }
             }
             catch (Exception)
             {
-                return false;
-            }
-
-            if (Directory.Exists(directoryPath))
-            {
-                if (this.FormattedInput[3].Equals(""))
-                {
-                    this.FormattedInput[3] = directoryPath;
-                    return true;
-                }
                 return false;
             }
 
@@ -211,6 +208,7 @@ namespace CodeAnalyzer
             }
             else if (programType.GetType() == typeof(ProgramFunction))
             {
+                //Console.Write("\n\n");
                 Console.Write("<function name = \"" + programType.Name + "\">");
                 tabs++;
                 PrintTabs();
@@ -218,6 +216,12 @@ namespace CodeAnalyzer
 
                 PrintTabs();
                 Console.Write("<complexity>" + ((ProgramFunction)programType).Complexity + "</complexity>");
+
+                // debug
+                //Console.Write("\n\n");
+                //foreach (string text in ((ProgramFunction)programType).Parameters)
+                //    Console.Write(text + " ");
+                // end debug
             }
 
             /* ---------- Repeat with child data ---------- */
@@ -259,9 +263,7 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramClass))
             {
                 Console.WriteLine("Class: " + programType.Name);
-                /*for (int i = 0; i < tabs; i++)
-                    Console.Write("\t");
-                Console.Write("\t- Modifiers: " + ((ProgramClass)programType).Modifiers);*/
+                
                 if (printRelationshipData)
                 {
                     for (int i = 0; i < tabs; i++)
@@ -294,14 +296,7 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramFunction))
             {
                 Console.WriteLine("Function: " + programType.Name);
-                /*for (int i = 0; i < tabs; i++)
-                    Console.Write("\t");
-                Console.Write("\t- Signature: " + ((ProgramFunction)programType).Modifiers 
-                    + " " + ((ProgramFunction)programType).ReturnType 
-                    + " " + programType.Name
-                    + ((ProgramFunction)programType).Parameters
-                    + " " + ((ProgramFunction)programType).BaseParameters);
-                Console.Write("\n");*/
+                
                 if (!printRelationshipData)
                 {
                     for (int i = 0; i < tabs; i++)

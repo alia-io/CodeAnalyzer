@@ -283,7 +283,8 @@ namespace CodeAnalyzer
                     continue;
 
                 /* ---------- Add entry to current ProgramDataType's text list ---------- */
-                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramDataType))
+                if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass)
+                    || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
                     ((ProgramDataType)typeStack.Peek()).TextData.Add(entry);
 
                 /* ---------- Check for a new line ---------- */
@@ -1439,7 +1440,7 @@ namespace CodeAnalyzer
                 {
                     foreach (string parameter in ((ProgramFunction)programDataType).Parameters)
                     {
-                        if (programClass.Name != parameter && codeAnalysisData.ProgramClassTypes.Contains(parameter))
+                        if (!programClass.Name.Equals(parameter) && codeAnalysisData.ProgramClassTypes.Contains(parameter))
                         {
                             ProgramClassType used = codeAnalysisData.ProgramClassTypes[parameter];
                             if (!programClass.UsedClasses.Contains(used))
