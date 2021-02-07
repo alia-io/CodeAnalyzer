@@ -155,8 +155,7 @@ namespace CodeAnalyzer
                     if (scopeStack.Count > 0)
                     {
                         if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("class")
-                        || scopeStack.Peek().Equals("interface") || scopeStack.Peek().Equals("struct")
-                        || scopeStack.Peek().Equals("enum") || scopeStack.Peek().Equals("function"))
+                        || scopeStack.Peek().Equals("interface") || scopeStack.Peek().Equals("function"))
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
@@ -177,6 +176,13 @@ namespace CodeAnalyzer
                 if (entry.Equals("class"))
                 {
                     index = this.NewClass(index);
+                    continue;
+                }
+
+                /* ---------- Check for a new interface ---------- */
+                if (entry.Equals("interface"))
+                {
+                    index = this.NewInterface(index);
                     continue;
                 }
 
@@ -226,8 +232,8 @@ namespace CodeAnalyzer
                             this.ClearStringBuilder();
                             return index;
                         }
-                        if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("interface")              // ending a different named scope
-                        || scopeStack.Peek().Equals("struct") || scopeStack.Peek().Equals("enum") || scopeStack.Peek().Equals("function"))
+                        // ending a different named scope
+                        if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("interface") || scopeStack.Peek().Equals("function"))
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
@@ -240,6 +246,13 @@ namespace CodeAnalyzer
                 if (entry.Equals("class"))
                 {
                     index = this.NewClass(index);
+                    continue;
+                }
+
+                /* ---------- Check for a new interface ---------- */
+                if (entry.Equals("interface"))
+                {
+                    index = this.NewInterface(index);
                     continue;
                 }
 
@@ -312,8 +325,7 @@ namespace CodeAnalyzer
                             return index;
                         }
                         // ending a different ProgramType scope
-                        if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("class")
-                        || scopeStack.Peek().Equals("interface") || scopeStack.Peek().Equals("struct") || scopeStack.Peek().Equals("enum"))
+                        if (scopeStack.Peek().Equals("namespace") || scopeStack.Peek().Equals("class") || scopeStack.Peek().Equals("interface"))
                         {
                             scopeStack.Pop();
                             if (typeStack.Count > 0) typeStack.Pop();
@@ -470,6 +482,77 @@ namespace CodeAnalyzer
             typeStack.Push(programClass); // push the class onto typeStack
 
             return this.ProcessProgramClassTypeData(++index); // reads the rest of the class
+        }
+
+        private int NewInterface(int index)
+        {
+            string entry;
+            string interfaceModifiers = stringBuilder.ToString();   // get the interface modifiers
+            List<string> interfaceText = new List<string>();
+            int brackets = 0;
+
+            scopeStack.Push("interface"); // push the type of the next scope opener onto scopeStack
+
+            this.ClearStringBuilder();
+            while (++index < programFile.FileTextData.Count) // get the name of the interface
+            {
+                entry = programFile.FileTextData[index];
+
+                /* ---------- Determine whether to ignore the entry ---------- */
+                if (this.IgnoreEntry(entry))
+                    continue;
+
+                /* ---------- If starting an area to ignore, push the entry ---------- */
+                if (this.StartPlainTextArea(entry))
+                    continue;
+
+                /* ---------- Add entry to interface's TextData list ---------- */
+                interfaceText.Add(entry);
+
+                if (entry.Equals("{"))
+                {
+                    scopeStack.Push("{"); // push the new scope opener onto scopeStack
+                    break;
+                }
+                if (interfaceText.Count == 0)
+                {
+                    if (entry.Equals("<") || entry.Equals("["))
+                    {
+                        brackets++;
+                        this.AppendToStringBuilder(entry);
+                        continue;
+                    }
+                    else if (brackets != 0)
+                    {
+                        if (entry.Equals(">") || entry.Equals("]"))
+                        {
+                            brackets--;
+                        }
+                        this.AppendToStringBuilder(entry);
+                        continue;
+                    }
+                }
+                if (stringBuilder.Length == 0)
+                {
+                    if (!entry.Equals(" ")) this.AppendToStringBuilder(entry); // the next entry after "interface" will be the name
+                    continue;
+                }
+            }
+
+            ProgramInterface programInterface = new ProgramInterface(stringBuilder.ToString(), interfaceModifiers);
+            this.ClearStringBuilder();
+
+            // add text/inheritance data, and add interface to general ProgramClassType list
+            programInterface.TextData = interfaceText;
+            codeAnalysisData.AddInterface(programInterface);
+
+            // add new interface to its parent's ChildList
+            if (typeStack.Count > 0) typeStack.Peek().ChildList.Add(programInterface);
+            else programFile.ChildList.Add(programInterface);
+
+            typeStack.Push(programInterface); // push the interface onto typeStack
+
+            return this.ProcessProgramClassTypeData(++index); // reads the rest of the interface
         }
 
         /* Used to detect the syntax for a function signature */
@@ -1347,20 +1430,25 @@ namespace CodeAnalyzer
     class RelationshipProcessor
     {
         CodeAnalysisData codeAnalysisData;
-        ProgramClass programClass;
+        ProgramClassType programClassType;
         
         public void ProcessRelationships(ProgramClassType programClassType, CodeAnalysisData codeAnalysisData)
         {
-            if (programClassType.GetType() != typeof(ProgramClass)) return; // interfaces will only collect subclasses
 
             this.codeAnalysisData = codeAnalysisData;
-            this.programClass = (ProgramClass)programClassType;
+
+            if (programClassType.GetType() == typeof(ProgramClass))
+                this.programClassType = programClassType;
+            else if (programClassType.GetType() == typeof(ProgramInterface))
+                this.programClassType = programClassType;
 
             this.SetInheritanceRelationships(); // get the superclass/subclass data from the beginning of the class text
 
+            if (programClassType.GetType() != typeof(ProgramClass)) return; // interfaces only collect inheritance data
+
             // (1) get the aggregation data from the class text and text of all children
             // (2) get the using data from the parameters fields of all child functions
-            this.SetAggregationAndUsingRelationships(this.programClass);
+            this.SetAggregationAndUsingRelationships(this.programClassType);
 
         }
 
@@ -1371,9 +1459,9 @@ namespace CodeAnalyzer
             bool hasSuperclasses = false;
             int brackets = 0;
 
-            for (index = 0;  index < programClass.TextData.Count; index++)
+            for (index = 0;  index < programClassType.TextData.Count; index++)
             {
-                entry = programClass.TextData[index];
+                entry = programClassType.TextData[index];
 
                 if (!hasSuperclasses)
                 {
@@ -1386,7 +1474,7 @@ namespace CodeAnalyzer
 
                 if (entry.Equals("{"))
                 {
-                    programClass.TextData = programClass.TextData.GetRange(++index, programClass.TextData.Count - index);
+                    programClassType.TextData = programClassType.TextData.GetRange(++index, programClassType.TextData.Count - index);
                     return;
                 }
 
@@ -1406,12 +1494,12 @@ namespace CodeAnalyzer
 
                 if (hasSuperclasses)
                 {
-                    if (programClass.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
+                    if (programClassType.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
                     {
                         ProgramClassType super = codeAnalysisData.ProgramClassTypes[entry];
-                        super.SubClasses.Add(programClass);
-                        programClass.SuperClasses.Add(super);
-                        programClass.TextData.RemoveAt(index);
+                        super.SubClasses.Add(programClassType);
+                        programClassType.SuperClasses.Add(super);
+                        programClassType.TextData.RemoveAt(index);
                     }
                 }
             }
@@ -1422,13 +1510,13 @@ namespace CodeAnalyzer
             // get the aggregation data
             foreach (string entry in programDataType.TextData)
             {
-                if (programClass.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
+                if (programClassType.Name != entry && codeAnalysisData.ProgramClassTypes.Contains(entry))
                 {
                     ProgramClassType owned = codeAnalysisData.ProgramClassTypes[entry];
-                    if (!programClass.OwnedClasses.Contains(owned) && owned.GetType() == typeof(ProgramClass))
+                    if (!((ProgramClass)programClassType).OwnedClasses.Contains(owned) && owned.GetType() == typeof(ProgramClass))
                     {
-                        ((ProgramClass)owned).OwnedByClasses.Add(programClass);
-                        programClass.OwnedClasses.Add(owned);
+                        ((ProgramClass)owned).OwnedByClasses.Add(programClassType);
+                        ((ProgramClass)programClassType).OwnedClasses.Add(owned);
                     }
                 }
             }
@@ -1440,13 +1528,13 @@ namespace CodeAnalyzer
                 {
                     foreach (string parameter in ((ProgramFunction)programDataType).Parameters)
                     {
-                        if (!programClass.Name.Equals(parameter) && codeAnalysisData.ProgramClassTypes.Contains(parameter))
+                        if (!programClassType.Name.Equals(parameter) && codeAnalysisData.ProgramClassTypes.Contains(parameter))
                         {
                             ProgramClassType used = codeAnalysisData.ProgramClassTypes[parameter];
-                            if (!programClass.UsedClasses.Contains(used))
+                            if (!((ProgramClass)programClassType).UsedClasses.Contains(used))
                             {
-                                used.UsedByClasses.Add(programClass);
-                                programClass.UsedClasses.Add(used);
+                                used.UsedByClasses.Add(programClassType);
+                                ((ProgramClass)programClassType).UsedClasses.Add(used);
                             }
                         }
                     }

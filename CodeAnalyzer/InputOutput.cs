@@ -199,11 +199,25 @@ namespace CodeAnalyzer
                 Console.Write("<interface name = \"" + programType.Name + "\">");
                 tabs++;
 
+                if (((ProgramInterface)programType).SuperClasses.Count > 0) // Inheritance, parents
+                    foreach (ProgramClassType superclass in ((ProgramInterface)programType).SuperClasses)
+                    {
+                        PrintTabs();
+                        Console.Write("<inheritance_parent>" + superclass.Name + "</inheritance_parent>");
+                    }
+
                 if (((ProgramInterface)programType).SubClasses.Count > 0) // Inheritance, children
                     foreach (ProgramClassType subclass in ((ProgramInterface)programType).SubClasses)
                     {
                         PrintTabs();
                         Console.Write("<inheritance_child>" + subclass.Name + "</inheritance_child>");
+                    }
+
+                if (((ProgramInterface)programType).UsedByClasses.Count > 0) // Using, parents
+                    foreach (ProgramClassType userclass in ((ProgramInterface)programType).UsedByClasses)
+                    {
+                        PrintTabs();
+                        Console.Write("<using_parent>" + userclass.Name + "</using_parent>");
                     }
             }
             else if (programType.GetType() == typeof(ProgramFunction))
@@ -238,6 +252,8 @@ namespace CodeAnalyzer
                 Console.Write("</namespace>");
             else if (programType.GetType() == typeof(ProgramClass))
                 Console.Write("</class>");
+            else if (programType.GetType() == typeof(ProgramInterface))
+                Console.Write("</interface>");
             else if (programType.GetType() == typeof(ProgramFunction))
                 Console.Write("</function>");
         }

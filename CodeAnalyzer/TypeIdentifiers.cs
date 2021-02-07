@@ -34,11 +34,13 @@ namespace CodeAnalyzer
     {
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
         public List<ProgramClassType> SubClasses { get; }       // *Inheritance* - ProgramClass(es) that this class is inherited by
+        public List<ProgramClassType> SuperClasses { get; }     // *Inheritance* - ProgramClass(es) that this class inherits from
         public List<ProgramClassType> UsedByClasses { get; }    // *Using* - ProgramClass(es) that this ProgramClass is used by
 
         public ProgramClassType(string name, string modifiers) : base(name, modifiers) 
         { 
             this.SubClasses = new List<ProgramClassType>();
+            this.SuperClasses = new List<ProgramClassType>();
             this.UsedByClasses = new List<ProgramClassType>();
         }
 
@@ -70,13 +72,11 @@ namespace CodeAnalyzer
 
     public class ProgramClass : ProgramClassType 
     {
-        public List<ProgramClassType> SuperClasses { get; }     // *Inheritance* - ProgramClass(es) that this class inherits from
         public List<ProgramClassType> OwnedClasses { get; }     // *Composition/Aggregation* - ProgramClass(es) that are "part of" (owned by) this ProgramClass
         public List<ProgramClassType> OwnedByClasses { get; }   // *Composition/Aggregation* - ProgramClass(es) that this ProgramClass is "part of"
         public List<ProgramClassType> UsedClasses { get; }      // *Using* - ProgramClass(es) that this ProgramClass uses
         public ProgramClass(string name, string modifiers) : base(name, modifiers) 
         {
-            this.SuperClasses = new List<ProgramClassType>();
             this.OwnedClasses = new List<ProgramClassType>();
             this.OwnedByClasses = new List<ProgramClassType>();
             this.UsedClasses = new List<ProgramClassType>();
