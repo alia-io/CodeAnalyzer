@@ -90,14 +90,8 @@ namespace CodeAnalyzer
 
             /* -------------------- Printing the Output Data -------------------- */
             OutputWriter outputWriter = new OutputWriter();
-            if (this.inputSessionData.PrintToXml)
-            {
-                outputWriter.PrintToFile(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);
-            }
-            else
-            {
-                outputWriter.PrintToStandardOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.SetRelationshipData);
-            }
+            outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
+
 
             // test
             /*foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)

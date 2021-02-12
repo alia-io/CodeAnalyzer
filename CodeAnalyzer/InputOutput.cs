@@ -116,18 +116,290 @@ namespace CodeAnalyzer
     {
         private int tabs = 0;
 
-        public void PrintToStandardOutput(List<ProgramFile> processedFileList, bool printRelationshipData)
+        /* Route the files to the appropriate output writer */
+        public void WriteOutput(List<ProgramFile> processedFileList, bool printToXML, bool printRelationships)
         {
-            Console.Write("\n");
-            foreach (ProgramFile programFile in processedFileList)
+            foreach (ProgramFile file in processedFileList)
             {
-                //this.NavigateProgramTypes_StdOut(programFile, printRelationshipData);
-                this.PrintAllOutputXML(programFile);
+                if (printToXML && printRelationships)
+                    this.WriteRelationshipsXML(file);
+                else if (printToXML)
+                    this.WriteFunctionsXML(file);
+                else
+                {
+                    Console.Write("\n");
+                    if (printRelationships)
+                        this.PrintRelationships(file);
+                    else
+                        this.PrintFunctions(file);
+                    Console.Write("\n");
+                }
             }
-            Console.Write("\n");
         }
 
-        public void PrintToFile(List<ProgramFile> processedFileList, bool printRelationshipData)
+        private void PrintFunctions(ProgramType programType)
+        {
+            PrintTabs();
+
+            /* ---------- Write the new element's name and data ---------- */
+
+            if (programType.GetType() == typeof(ProgramFile))
+            {
+                Console.Write("------------------------------------------------------------------------------------------\n");
+                Console.Write("File: " + programType.Name);
+                Console.Write("\n------------------------------------------------------------------------------------------\n");
+            }
+
+            else if (programType.GetType() == typeof(ProgramNamespace))
+            {
+                Console.Write("Namespace: " + programType.Name);
+                tabs++;
+            }
+
+            else if (programType.GetType() == typeof(ProgramClass))
+            {
+                Console.Write("Class: " + programType.Name);
+                tabs++;
+            }
+
+            else if (programType.GetType() == typeof(ProgramInterface))
+            {
+                Console.Write("Interface: " + programType.Name);
+                tabs++;
+            }
+
+            else if (programType.GetType() == typeof(ProgramFunction))
+            {
+                Console.Write("Function: " + programType.Name);
+                tabs += 2;
+                /* ---------- Print function data ---------- */
+                PrintTabs();
+                Console.Write(">---> Size: " + ((ProgramFunction)programType).Size);
+                PrintTabs();
+                Console.Write(">---> Complexity: " + ((ProgramFunction)programType).Complexity);
+                tabs--; // reset tabs
+            }
+
+            /* ---------- Repeat with child data ---------- */
+            if (programType.ChildList.Count > 0)
+                foreach (ProgramType child in programType.ChildList)
+                    PrintFunctions(child);
+
+            if (programType.GetType() != typeof(ProgramFile)) tabs--; // reset tabs
+        }
+
+        private void PrintRelationships(ProgramType programType)
+        {
+            PrintTabs();
+
+            /* ---------- Write the new element's name and data ---------- */
+
+            if (programType.GetType() == typeof(ProgramFile))
+            {
+                Console.Write("------------------------------------------------------------------------------------------\n");
+                Console.Write("File: " + programType.Name);
+                Console.Write("\n------------------------------------------------------------------------------------------\n");
+            }
+
+            else if (programType.GetType() == typeof(ProgramNamespace))
+            {
+                Console.Write("Namespace: " + programType.Name);
+                tabs++;
+            }
+
+            else if (programType.GetType() == typeof(ProgramClass))
+            {
+                Console.Write("Class: " + programType.Name);
+                tabs += 2;
+
+                /* ---------- Print class/interface data ---------- */
+
+                if (((ProgramClass)programType).SuperClasses.Count > 0) // Inheritance, parents
+                {
+                    PrintTabs();
+                    if (((ProgramClass)programType).SuperClasses.Count == 1)
+                        Console.Write(">---> Superclass: " + ((ProgramClass)programType).SuperClasses[0].Name);
+                    else
+                    {
+                        Console.Write(">---> Superclasses: ");
+                        foreach (ProgramClassType superclass in ((ProgramClass)programType).SuperClasses)
+                        {
+                            if (superclass.Equals(((ProgramClass)programType).SuperClasses[0]))
+                            {
+                                Console.Write(superclass.Name);
+                                continue;
+                            }
+                            Console.Write(", " + superclass.Name);
+                        }
+                    }
+                }
+
+                if (((ProgramClass)programType).SubClasses.Count > 0) // Inheritance, children
+                {
+                    PrintTabs();
+                    if (((ProgramClass)programType).SubClasses.Count == 1)
+                        Console.Write(">---> Subclass: " + ((ProgramClass)programType).SubClasses[0].Name);
+                    else
+                    {
+                        Console.Write(">---> Subclasses: ");
+                        foreach (ProgramClassType subclass in ((ProgramClass)programType).SubClasses)
+                        {
+                            if (subclass.Equals(((ProgramClass)programType).SubClasses[0]))
+                            {
+                                Console.Write(subclass.Name);
+                                continue;
+                            }
+                            Console.Write(", " + subclass.Name);
+                        }
+                    }
+                }
+
+                if (((ProgramClass)programType).OwnedByClasses.Count > 0) // Aggregation, parents
+                {
+                    PrintTabs();
+                    Console.Write(">---> Owned By: ");
+                    foreach (ProgramClassType ownerclass in ((ProgramClass)programType).OwnedByClasses)
+                    {
+                        if (ownerclass.Equals(((ProgramClass)programType).OwnedByClasses[0]))
+                        {
+                            Console.Write(ownerclass.Name);
+                            continue;
+                        }
+                        Console.Write(", " + ownerclass.Name);
+                    }
+                }
+
+                if (((ProgramClass)programType).OwnedClasses.Count > 0) // Aggregation, children
+                {
+                    PrintTabs();
+                    Console.Write(">---> Owner Of: ");
+                    foreach (ProgramClassType ownedclass in ((ProgramClass)programType).OwnedClasses)
+                    {
+                        if (ownedclass.Equals(((ProgramClass)programType).OwnedClasses[0]))
+                        {
+                            Console.Write(ownedclass.Name);
+                            continue;
+                        }
+                        Console.Write(", " + ownedclass.Name);
+                    }
+                }
+
+                if (((ProgramClass)programType).UsedByClasses.Count > 0) // Using, parents
+                {
+                    PrintTabs();
+                    Console.Write(">---> Used By: ");
+                    foreach (ProgramClassType userclass in ((ProgramClass)programType).UsedByClasses)
+                    {
+                        if (userclass.Equals(((ProgramClass)programType).UsedByClasses[0]))
+                        {
+                            Console.Write(userclass.Name);
+                            continue;
+                        }
+                        Console.Write(", " + userclass.Name);
+                    }
+                }
+
+                if (((ProgramClass)programType).UsedClasses.Count > 0) // Using, children
+                {
+                    PrintTabs();
+                    Console.Write(">---> Using: ");
+                    foreach (ProgramClassType usedclass in ((ProgramClass)programType).UsedClasses)
+                    {
+                        if (usedclass.Equals(((ProgramClass)programType).UsedClasses[0]))
+                        {
+                            Console.Write(usedclass.Name);
+                            continue;
+                        }
+                        Console.Write(", " + usedclass.Name);
+                    }
+                }
+                tabs--; // reset tabs
+            }
+
+            else if (programType.GetType() == typeof(ProgramInterface))
+            {
+                Console.Write("Interface: " + programType.Name);
+                tabs += 2;
+
+                /* ---------- Print class/interface data ---------- */
+
+                if (((ProgramInterface)programType).SuperClasses.Count > 0) // Inheritance, parents
+                {
+                    PrintTabs();
+                    if (((ProgramInterface)programType).SuperClasses.Count == 1)
+                        Console.Write(">---> Superclass: " + ((ProgramInterface)programType).SuperClasses[0].Name);
+                    else
+                    {
+                        Console.Write(">---> Superclasses: ");
+                        foreach (ProgramClassType superclass in ((ProgramInterface)programType).SuperClasses)
+                        {
+                            if (superclass.Equals(((ProgramInterface)programType).SuperClasses[0]))
+                            {
+                                Console.Write(superclass.Name);
+                                continue;
+                            }
+                            Console.Write(", " + superclass.Name);
+                        }
+                    }
+                }
+
+                if (((ProgramInterface)programType).SubClasses.Count > 0) // Inheritance, children
+                {
+                    PrintTabs();
+                    if (((ProgramInterface)programType).SubClasses.Count == 1)
+                        Console.Write(">---> Subclass: " + ((ProgramInterface)programType).SubClasses[0].Name);
+                    else
+                    {
+                        Console.Write(">---> Subclasses: ");
+                        foreach (ProgramClassType subclass in ((ProgramInterface)programType).SubClasses)
+                        {
+                            if (subclass.Equals(((ProgramInterface)programType).SubClasses[0]))
+                            {
+                                Console.Write(subclass.Name);
+                                continue;
+                            }
+                            Console.Write(", " + subclass.Name);
+                        }
+                    }
+                }
+
+                if (((ProgramInterface)programType).UsedByClasses.Count > 0) // Using, parents
+                {
+                    PrintTabs();
+                    Console.Write(">---> Used By: ");
+                    foreach (ProgramClassType userclass in ((ProgramInterface)programType).UsedByClasses)
+                    {
+                        if (userclass.Equals(((ProgramInterface)programType).UsedByClasses[0]))
+                        {
+                            Console.Write(userclass.Name);
+                            continue;
+                        }
+                        Console.Write(", " + userclass.Name);
+                    }
+                }
+                tabs--; // reset tabs
+            }
+
+            else if (programType.GetType() == typeof(ProgramFunction))
+            {
+                Console.Write("Function: " + programType.Name);
+                tabs++;
+            }
+
+            /* ---------- Repeat with child data ---------- */
+            if (programType.ChildList.Count > 0)
+                foreach (ProgramType child in programType.ChildList)
+                    PrintRelationships(child);
+
+            if (programType.GetType() != typeof(ProgramFile)) tabs--; // reset tabs
+        }
+
+        private void WriteFunctionsXML(ProgramType programType)
+        {
+
+        }
+
+        private void WriteRelationshipsXML(ProgramType programType)
         {
 
         }
@@ -222,7 +494,6 @@ namespace CodeAnalyzer
             }
             else if (programType.GetType() == typeof(ProgramFunction))
             {
-                //Console.Write("\n\n");
                 Console.Write("<function name = \"" + programType.Name + "\">");
                 tabs++;
                 PrintTabs();
@@ -230,12 +501,6 @@ namespace CodeAnalyzer
 
                 PrintTabs();
                 Console.Write("<complexity>" + ((ProgramFunction)programType).Complexity + "</complexity>");
-
-                // debug
-                //Console.Write("\n\n");
-                //foreach (string text in ((ProgramFunction)programType).Parameters)
-                //    Console.Write(text + " ");
-                // end debug
             }
 
             /* ---------- Repeat with child data ---------- */
@@ -258,90 +523,11 @@ namespace CodeAnalyzer
                 Console.Write("</function>");
         }
 
-        private void NavigateProgramTypes_StdOut(ProgramType programType, bool printRelationshipData)
-        {
-            Console.Write("\n\n");
-            for (int i = 0; i < tabs; i++)
-                Console.Write("\t");
-
-            /* ---------- Print out the programType information ---------- */
-            if (programType.GetType() == typeof(ProgramFile))
-            {
-                Console.WriteLine("File: " + programType.Name);
-                for (int i = 0; i < tabs; i++)
-                    Console.Write("\t");
-                Console.Write("\t- FilePath: " + ((ProgramFile)programType).FilePath);
-            }
-            else if (programType.GetType() == typeof(ProgramNamespace))
-            {
-                Console.WriteLine("Namespace: " + programType.Name);
-            }
-            else if (programType.GetType() == typeof(ProgramClass))
-            {
-                Console.WriteLine("Class: " + programType.Name);
-                
-                if (printRelationshipData)
-                {
-                    for (int i = 0; i < tabs; i++)
-                        Console.Write("\t");
-                    bool comma = false;
-                    Console.Write("\t- Superclasses: ");
-                    foreach (ProgramClassType programClassType in ((ProgramClass)programType).SuperClasses)
-                    {
-                        if (comma)
-                            Console.Write(", ");
-                        Console.Write(programClassType.Name);
-                        if (!comma)
-                            comma = true;
-                    }
-                    Console.Write("\n");
-                    for (int i = 0; i < tabs; i++)
-                        Console.Write("\t");
-                    comma = false;
-                    Console.Write("\t- Subclasses: ");
-                    foreach (ProgramClassType programClassType in ((ProgramClass)programType).SubClasses)
-                    {
-                        if (comma)
-                            Console.Write(", ");
-                        Console.Write(programClassType.Name);
-                        if (!comma)
-                            comma = true;
-                    }
-                }
-            }
-            else if (programType.GetType() == typeof(ProgramFunction))
-            {
-                Console.WriteLine("Function: " + programType.Name);
-                
-                if (!printRelationshipData)
-                {
-                    for (int i = 0; i < tabs; i++)
-                        Console.Write("\t");
-                    Console.Write("\t- Size: " + ((ProgramFunction)programType).Size);
-                    Console.Write("\n");
-                    for (int i = 0; i < tabs; i++)
-                        Console.Write("\t");
-                    Console.Write("\t- Complexity: " + ((ProgramFunction)programType).Complexity);
-                }
-            }
-
-            /* ---------- Repeat with child data ---------- */
-            if (programType.ChildList.Count > 0)
-            {
-                tabs++;
-                foreach (ProgramType child in programType.ChildList)
-                {
-                    this.NavigateProgramTypes_StdOut(child, printRelationshipData);
-                }
-                tabs--;
-            }
-        }
-
         private void PrintTabs()
         {
             Console.Write("\n");
             for (int i = 0; i < tabs; i++)
-                Console.Write("\t");
+                Console.Write("    ");
         }
     }
 }
