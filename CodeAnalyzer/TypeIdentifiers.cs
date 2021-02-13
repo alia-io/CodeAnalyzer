@@ -116,7 +116,7 @@ namespace CodeAnalyzer
             this.ReturnType = returnType;
             this.Parameters = parameters;
             this.BaseParameters = baseParameters;
-            this.Size = 1;
+            this.Size = 0;
             this.Complexity = 0;
         }
     }
