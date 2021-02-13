@@ -46,6 +46,7 @@ namespace CodeAnalyzer
             /* -------------------- Reading and Setting the Input -------------------- */
 
             InputReader inputReader = new InputReader();
+            int numberOfFiles;
 
             // parse the input
             if (!inputReader.FormatInput(args)) // if input is invalid
@@ -59,53 +60,36 @@ namespace CodeAnalyzer
 
             // create and read all the files, and enqueue them on the FileQueue
             this.inputSessionData.EnqueueFiles();
+            numberOfFiles = this.inputSessionData.FileQueue.Count();
 
             /* -------------------- Reading and Analyzing the Files -------------------- */
 
+            /* ---------- 1: Preprocess the file text into a list of logical text entities ---------- */
+            for (int i = 0; i < numberOfFiles; i++)
+            {
+                ProgramFile programFile = this.inputSessionData.FileQueue.Dequeue();
+                new FileProcessor(programFile).ProcessFile();
+                this.inputSessionData.FileQueue.Enqueue(programFile);   // enqueue the file again for secondary processing
+            }
+
+            /* ---------- 2: Establish the hierarchy of types and collect function data ---------- */
             while (this.inputSessionData.FileQueue.Count > 0)
             {
-                FileProcessor fileProcessor = new FileProcessor();
-                fileProcessor.ProcessFile(this.codeAnalysisData, this.inputSessionData.FileQueue.Dequeue());
+                ProgramFile programFile = this.inputSessionData.FileQueue.Dequeue();
+                new CodeProcessor(programFile, this.codeAnalysisData.ProgramClassTypes).ProcessFileCode();
+                this.codeAnalysisData.ProcessedFiles.Add(programFile);   // add file to processed files list
             }
 
-            /* -------------------- Reading and Analyzing the Relationship Data -------------------- */
+            /* ---------- 3: Collect class relationship data ---------- */
             foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
             {
-                RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
-                relationshipProcessor.ProcessRelationships(programClassType, this.codeAnalysisData);
+                new RelationshipProcessor(programClassType, this.codeAnalysisData.ProgramClassTypes).ProcessRelationships();
             }
-
-            /*Console.Write("\n\n");
-            foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
-            {
-                Console.Write(programClassType.Name + " \n\n| ");
-                foreach (string text in programClassType.TextData)
-                {
-                    Console.Write(text + " | ");
-                }
-                Console.Write("\n\n");
-            }
-
-            Console.Write("\n\n");
 
             /* -------------------- Printing the Output Data -------------------- */
             OutputWriter outputWriter = new OutputWriter();
             outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
 
-
-            // test
-            /*foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
-            {
-                Console.Write("\n");
-                Console.Write("\nClass Name: " + programClassType.Name);
-                Console.Write("\n\n| ");
-                foreach (string text in programClassType.TextData)
-                {
-                    Console.Write(text + " | ");
-                }
-            }
-            Console.Write("\n\n");*/
-            // end test
         }
 
     }

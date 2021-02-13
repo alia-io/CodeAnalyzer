@@ -217,40 +217,30 @@ namespace CodeAnalyzer
                 if (((ProgramClass)programType).SuperClasses.Count > 0) // Inheritance, parents
                 {
                     PrintTabs();
-                    if (((ProgramClass)programType).SuperClasses.Count == 1)
-                        Console.Write(">---> Superclass: " + ((ProgramClass)programType).SuperClasses[0].Name);
-                    else
+                    Console.Write(">---> Inherits: ");
+                    foreach (ProgramClassType superclass in ((ProgramClass)programType).SuperClasses)
                     {
-                        Console.Write(">---> Superclasses: ");
-                        foreach (ProgramClassType superclass in ((ProgramClass)programType).SuperClasses)
+                        if (superclass.Equals(((ProgramClass)programType).SuperClasses[0]))
                         {
-                            if (superclass.Equals(((ProgramClass)programType).SuperClasses[0]))
-                            {
-                                Console.Write(superclass.Name);
-                                continue;
-                            }
-                            Console.Write(", " + superclass.Name);
+                            Console.Write(superclass.Name);
+                            continue;
                         }
+                        Console.Write(", " + superclass.Name);
                     }
                 }
 
                 if (((ProgramClass)programType).SubClasses.Count > 0) // Inheritance, children
                 {
                     PrintTabs();
-                    if (((ProgramClass)programType).SubClasses.Count == 1)
-                        Console.Write(">---> Subclass: " + ((ProgramClass)programType).SubClasses[0].Name);
-                    else
+                    Console.Write(">---> Inherited By: ");
+                    foreach (ProgramClassType subclass in ((ProgramClass)programType).SubClasses)
                     {
-                        Console.Write(">---> Subclasses: ");
-                        foreach (ProgramClassType subclass in ((ProgramClass)programType).SubClasses)
+                        if (subclass.Equals(((ProgramClass)programType).SubClasses[0]))
                         {
-                            if (subclass.Equals(((ProgramClass)programType).SubClasses[0]))
-                            {
-                                Console.Write(subclass.Name);
-                                continue;
-                            }
-                            Console.Write(", " + subclass.Name);
+                            Console.Write(subclass.Name);
+                            continue;
                         }
+                        Console.Write(", " + subclass.Name);
                     }
                 }
 

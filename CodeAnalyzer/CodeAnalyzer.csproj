@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CentralData.cs" />
+    <Compile Include="Tests.cs" />
     <Compile Include="CodeAnalyzer.cs" />
     <Compile Include="InputOutput.cs" />
     <Compile Include="TypeIdentifiers.cs" />

@@ -17,10 +17,6 @@ namespace CodeAnalyzer
             this.ProcessedFiles = new List<ProgramFile>();
             this.ProgramClassTypes = new ProgramClassTypeCollection();
         }
-
-        public void AddFile(ProgramFile file) { this.ProcessedFiles.Add(file); }
-        public void AddClass(ProgramClass programClass) { this.ProgramClassTypes.Add(programClass); }
-        public void AddInterface(ProgramInterface programInterface) { this.ProgramClassTypes.Add(programInterface); }
     }
 
     public class InputSessionData
