@@ -1,4 +1,16 @@
-﻿using System;
+﻿/////////////////////////////////////////////////////////////////////////////////////////
+///                                                                                   ///
+///  InputOutput.cs - Parses command line input, formats and prints analysis output   ///
+///                                                                                   ///
+///  Language:      C#                                                                ///
+///  Platform:      Dell G5 5090, Windows 10                                          ///
+///  Application:   CodeAnalyzer - Project #2 for                                     ///
+///                 CSE681: Software Modeling and Analysis                            ///
+///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
+///                                                                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,6 +19,7 @@ using System.IO;
 
 namespace CodeAnalyzer
 {
+    /* Parses input from command line into expected format */
     class InputReader
     {
         public string[] FormattedInput { get; private set; }

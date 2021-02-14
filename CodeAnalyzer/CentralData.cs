@@ -1,16 +1,24 @@
-﻿using System;
+﻿/////////////////////////////////////////////////////////////////////////////////////////
+///                                                                                   ///
+///  CentralData.cs - Defines and manages application session and program state data  ///
+///                                                                                   ///
+///  Language:      C#                                                                ///
+///  Platform:      Dell G5 5090, Windows 10                                          ///
+///  Application:   CodeAnalyzer - Project #2 for                                     ///
+///                 CSE681: Software Modeling and Analysis                            ///
+///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
+///                                                                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace CodeAnalyzer
 {
     class CodeAnalysisData
     {
-        public List<ProgramFile> ProcessedFiles { get; }
-        public ProgramClassTypeCollection ProgramClassTypes { get; }
+        public List<ProgramFile> ProcessedFiles { get; } // list of file objects with all subtypes
+        public ProgramClassTypeCollection ProgramClassTypes { get; } // collection of all classes and interfaces in all files
 
         public CodeAnalysisData()
         {

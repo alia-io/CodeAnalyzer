@@ -1,4 +1,16 @@
-﻿using System;
+﻿/////////////////////////////////////////////////////////////////////////////////////////
+///                                                                                   ///
+///  MainControl.cs - Launches application, controls the flow of execution            ///
+///                                                                                   ///
+///  Language:      C#                                                                ///
+///  Platform:      Dell G5 5090, Windows 10                                          ///
+///  Application:   CodeAnalyzer - Project #2 for                                     ///
+///                 CSE681: Software Modeling and Analysis                            ///
+///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
+///                                                                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

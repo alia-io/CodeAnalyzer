@@ -1,9 +1,20 @@
-﻿using System;
+﻿/////////////////////////////////////////////////////////////////////////////////////////
+///                                                                                   ///
+///  CodeAnalyzer.cs - Analyzes all C# code input from a file, stores analysis data   ///
+///                                                                                   ///
+///  Language:      C#                                                                ///
+///  Platform:      Dell G5 5090, Windows 10                                          ///
+///  Application:   CodeAnalyzer - Project #2 for                                     ///
+///                 CSE681: Software Modeling and Analysis                            ///
+///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
+///                                                                                   ///
+/////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {
