@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {
-    /* Preprocesses file text into a list of strings */
+    /* Pre-processor of file text into a list of strings */
     class FileProcessor
     {
         ProgramFile programFile;
@@ -20,22 +20,22 @@ namespace CodeAnalyzer
         {
             IEnumerator enumerator;
 
-            // split text by line
+            // Split text by line
             string[] programLines = programFile.FileText.Split(new String[] { Environment.NewLine }, StringSplitOptions.None);
 
             for (int i = 0; i < programLines.Length; i++)
             {
                 enumerator = programLines[i].GetEnumerator();
 
-                while (enumerator.MoveNext()) // read the line char by char
+                while (enumerator.MoveNext()) // Read the line char by char
                 {
-                    if (Char.IsWhiteSpace((char)enumerator.Current)) // add the element to the FileTextData list
+                    if (Char.IsWhiteSpace((char)enumerator.Current)) // Add the element to the FileTextData list
                     {
                         this.AddEntryToFileTextData();
                         continue;
                     }
 
-                    /* ---------- Check special cases ---------- */
+                    // Check special cases
                     if ((Char.IsPunctuation((char)enumerator.Current) || Char.IsSymbol((char)enumerator.Current))
                         && !((char)enumerator.Current).Equals('_'))
                     {
@@ -57,7 +57,7 @@ namespace CodeAnalyzer
                 }
 
                 this.AddEntryToFileTextData();
-                programFile.FileTextData.Add(" "); // mark for a new line
+                programFile.FileTextData.Add(" "); // Marker for a new line
             }
         }
 
@@ -100,7 +100,7 @@ namespace CodeAnalyzer
         }
     }
 
-    /* Fully processes the file data (except relationship data), fills all internal Child ProgramType lists */
+    /* Processor of the file data (except relationship data), filling all internal Child ProgramType lists */
     class CodeProcessor
     {
         /* Saved references from input arguments */
@@ -114,14 +114,14 @@ namespace CodeAnalyzer
         private readonly StringBuilder stringBuilder = new StringBuilder("");
 
         /* Scope syntax rules to check for */
-        int ifScope = 0;        // [0-1]: "if" ONLY if elseIfScope == 0, [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless
-        int elseIfScope = 0;    // [0-1]: "else", [1-2]: "if", [2-3]: "(", [3-4]: word(s), [4-5]: ")", [5-0]: "{" or bracketless
-        int elseScope = 0;      // [0-1]: "else", [1-0]: "{" or bracketless NOT "if"
-        int forScope = 0;       // [0-1]: "for", [1-2]: "(", [2-3]: word(s), [3-4]: ";", [4-5]: word(s), [5-6]: ";", [6-7]: word(s), [7-8]: ")", [8-0]: "{" or bracketless
-        int forEachScope = 0;   // [0-1]: "foreach", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless
-        int whileScope = 0;     // [0-1]: "while", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{" or bracketless NOT ";"
-        int doWhileScope = 0;   // [0-1]: "do", [1-0]: "{" or bracketless
-        int switchScope = 0;    // [0-1]: "switch", [1-2]: "(", [2-3]: word(s), [3-4]: ")", [4-0]: "{"
+        int ifScope = 0;
+        int elseIfScope = 0;
+        int elseScope = 0;
+        int forScope = 0;
+        int forEachScope = 0;
+        int whileScope = 0;
+        int doWhileScope = 0;
+        int switchScope = 0;
 
         int savedScopeStackCount = 0;
 
@@ -241,7 +241,7 @@ namespace CodeAnalyzer
                 }
 
                 // Check control flow scope openers
-                if (!entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction) && this.CheckScopes(entry))
+                if (!entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction) && this.CheckControlFlowScopes(entry))
                     scopeOpener = true;
 
                 if (entry.Equals("(")) scopeStack.Push(entry); // Check for open parenthesis
@@ -836,28 +836,310 @@ namespace CodeAnalyzer
             return -1;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* Maintains stack for commented areas; returns true if text is within a comment */
-        private bool IgnoreEntry(string entry)
+        /* Check for control flow scope openers within functions: if, else if, else, for, for each, while, do while, switch */
+        private bool CheckControlFlowScopes(string entry)
         {
-            // Determine entry is within a comment, and check for the end of the comment
-            if (this.IsComment(entry)) return true;
+            bool scopeOpener = false;
 
-            // If starting a commented area, push the entry
-            if (this.StartPlainTextArea(entry)) return true;
+            if (ifScope > 0)
+                if (this.CheckIfScope(entry)) scopeOpener = true;
 
+            if (elseIfScope > 0)
+                if (this.CheckElseIfScope(entry)) scopeOpener = true;
+
+            if (elseScope > 0)
+                if (this.CheckElseScope(entry)) scopeOpener = true;
+
+            if (forScope > 0)
+                if (this.CheckForScope(entry)) scopeOpener = true;
+
+            if (forEachScope > 0)
+                if (this.CheckForEachScope(entry)) scopeOpener = true;
+
+            if (whileScope > 0)
+                if (this.CheckWhileScope(entry)) scopeOpener = true;
+
+            if (doWhileScope > 0)
+                if (this.CheckDoWhileScope(entry)) scopeOpener = true;
+
+            if (switchScope > 0)
+                if (this.CheckSwitchScope(entry)) scopeOpener = true;
+
+            /* Recheck the scopes with no rules passed, because "entry" could be the first word inside a bracketless scope
+            * that was just opened. Need to check for the beginning of another scope directly after. */
+
+            if (ifScope == 0 && this.CheckIfScope(entry)) scopeOpener = true;
+            if (elseIfScope == 0 && this.CheckElseIfScope(entry)) scopeOpener = true;
+            if (elseScope == 0 && this.CheckElseScope(entry)) scopeOpener = true;
+            if (forScope == 0 && this.CheckForScope(entry)) scopeOpener = true;
+            if (forEachScope == 0 && this.CheckForEachScope(entry)) scopeOpener = true;
+            if (whileScope == 0 && this.CheckWhileScope(entry)) scopeOpener = true;
+            if (doWhileScope == 0 && this.CheckDoWhileScope(entry)) scopeOpener = true;
+            if (switchScope == 0 && this.CheckSwitchScope(entry)) scopeOpener = true;
+
+            return scopeOpener;
+        }
+        
+        /* Tests rules for "if" statement syntax */
+        private bool CheckIfScope(string entry)
+        {
+            switch (ifScope)
+            {
+                case 0: // To pass: Find "if" and elseIfScope == 0.
+                    if (entry.Equals("if") && elseIfScope == 0)
+                    {
+                        ifScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) ifScope = 2;
+                    else ifScope = 0;
+                    break;
+                case 2: // To pass: Find at least one entry inside parentheses.
+                    ifScope = 3;
+                    break;
+                case 3: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count)
+                        ifScope = 4;
+                    break;
+                case 4: // Add new "if" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("if");
+                    stringBuilder.Clear();
+                    ifScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+        
+        /* Tests rules for "if else" statement syntax */
+        private bool CheckElseIfScope(string entry)
+        {
+            switch (elseIfScope)
+            {
+                case 0: // To pass: Find "else".
+                    if (entry.Equals("else"))
+                    {
+                        elseIfScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find "if".
+                    if (entry.Equals("if")) elseIfScope = 2;
+                    else elseIfScope = 0;
+                    break;
+                case 2: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) elseIfScope = 3;
+                    else elseIfScope = 0;
+                    break;
+                case 3: // To pass: Find at least one entry inside parentheses.
+                    elseIfScope = 4;
+                    break;
+                case 4: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) elseIfScope = 5;
+                    break;
+                case 5: // Add new "else if" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("else if");
+                    stringBuilder.Clear();
+                    elseIfScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "else" statement syntax */
+        private bool CheckElseScope(string entry)
+        {
+            switch (elseScope)
+            {
+                case 0: // To pass: Find "else".
+                    if (entry.Equals("else")) elseScope = 1;
+                    break;
+                case 1: // To pass: Anything except "if".
+                    if (entry.Equals("if"))
+                    {
+                        elseScope = 0;
+                        break;
+                    }
+                    // Add new "else" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("else");
+                    stringBuilder.Clear();
+                    elseScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "for" loop syntax */
+        private bool CheckForScope(string entry)
+        {
+            switch (forScope)
+            {
+                case 0: // To pass: Find "for".
+                    if (entry.Equals("for"))
+                    {
+                        forScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) forScope = 2;
+                    else forScope = 0;
+                    break;
+                case 2: // To pass: Find at least one entry.
+                    forScope = 3;
+                    break;
+                case 3: // To pass: Find semicolon.
+                    if (entry.Equals(";")) forScope = 4;
+                    break;
+                case 4: // To pass: Find at least one entry.
+                    forScope = 5;
+                    break;
+                case 5: // To pass: Find semicolon.
+                    if (entry.Equals(";")) forScope = 6;
+                    break;
+                case 6: // To pass: Find at least one entry.
+                    forScope = 7;
+                    break;
+                case 7: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forScope = 8;
+                    break;
+                case 8: // Add new "for" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("for");
+                    stringBuilder.Clear();
+                    forScope = 0; // Reset rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "foreach" loop syntax */
+        private bool CheckForEachScope(string entry)
+        {
+            switch (forEachScope)
+            {
+                case 0: // To pass: Find "foreach".
+                    if (entry.Equals("foreach"))
+                    {
+                        forEachScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) forEachScope = 2;
+                    else forEachScope = 0;
+                    break;
+                case 2: // To pass: Find at least one entry inside parentheses.
+                    forEachScope = 3;
+                    break;
+                case 3: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forEachScope = 4;
+                    break;
+                case 4: // Add new "foreach" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("foreach");
+                    stringBuilder.Clear();
+                    forEachScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "while" loop syntax */
+        private bool CheckWhileScope(string entry)
+        {
+            switch (whileScope)
+            {
+                case 0: // To pass: Find "while".
+                    if (entry.Equals("while"))
+                    {
+                        whileScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) whileScope = 2;
+                    else whileScope = 0;
+                    break;
+                case 2: // To pass: Find at least one entry inside parentheses.
+                    whileScope = 3;
+                    break;
+                case 3: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) whileScope = 4;
+                    break;
+                case 4: // To pass: Anything except semicolon.
+                    if (entry.Equals(";"))
+                    {
+                        whileScope = 0;
+                        break;
+                    }
+                    // Add new "while" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("while");
+                    stringBuilder.Clear();
+                    whileScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "do while" loop syntax */
+        private bool CheckDoWhileScope(string entry)
+        {
+            switch (doWhileScope)
+            {
+                case 0: // To pass: Find "do".
+                    if (entry.Equals("do")) doWhileScope = 1;
+                    break;
+                case 1: // Add new "do while" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("do while");
+                    stringBuilder.Clear();
+                    doWhileScope = 0; // Reset the rule
+                    return true;
+            }
+            return false;
+        }
+
+        /* Tests rules for "switch" statement syntax */
+        private bool CheckSwitchScope(string entry)
+        {
+            switch (switchScope)
+            {
+                case 0: // To pass: Find "switch".
+                    if (entry.Equals("switch"))
+                    {
+                        switchScope = 1;
+                        savedScopeStackCount = scopeStack.Count;
+                    }
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    if (entry.Equals("(")) switchScope = 2;
+                    else switchScope = 0;
+                    break;
+                case 2: // To pass: Find at least one entry inside parentheses.
+                    switchScope = 3;
+                    break;
+                case 3: // To pass: Find closing parenthesis.
+                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) switchScope = 4;
+                    break;
+                case 4: // To pass: Find opening bracket.
+                    if (!entry.Equals("{"))
+                    {
+                        switchScope = 0;
+                        break;
+                    }
+                    // Add new "switch" scope
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push("switch");
+                    stringBuilder.Clear();
+                    switchScope = 0; // Reset the rule
+                    return true;
+            }
             return false;
         }
 
@@ -933,429 +1215,10 @@ namespace CodeAnalyzer
                 ((ProgramFunction)typeStack.Peek()).Size++;
         }
 
-
-
-
-
-
-
-
-        
-
-
-        /* ---------- Scope Detectors (within functions) ---------- */
-
-        private bool CheckScopes(string entry)
+        /* Maintains stack for commented areas; returns true if text is within a comment */
+        private bool IgnoreEntry(string entry)
         {
-            bool scopeOpener = false;
-
-            bool ifScopeChecked = false;
-            bool elseIfScopeChecked = false;
-            bool elseScopeChecked = false;
-            bool forScopeChecked = false;
-            bool forEachScopeChecked = false;
-            bool whileScopeChecked = false;
-            bool doWhileScopeChecked = false;
-            bool switchScopeChecked = false;
-
-            /* ---------- Check "if" scope ---------- */
-            if (ifScope > 0)
-            {
-                if (this.CheckIfScope(entry))
-                    scopeOpener = true;
-                ifScopeChecked = true;
-            }
-
-            /* ---------- Check "else if" scope ---------- */
-            if (elseIfScope > 0)
-            {
-                if (this.CheckElseIfScope(entry))
-                    scopeOpener = true;
-                elseIfScopeChecked = true;
-            }
-
-            /* ---------- Check "else" scope ---------- */
-            if (elseScope > 0)
-            {
-                if (this.CheckElseScope(entry))
-                    scopeOpener = true;
-                elseScopeChecked = true;
-            }
-
-            /* ---------- Check "for" scope ---------- */
-            if (forScope > 0)
-            {
-                if (this.CheckForScope(entry))
-                    scopeOpener = true;
-                forScopeChecked = true;
-            }
-
-            /* ---------- Check "foreach" scope ---------- */
-            if (forEachScope > 0)
-            {
-                if (this.CheckForEachScope(entry))
-                    scopeOpener = true;
-                forEachScopeChecked = true;
-            }
-
-            /* ---------- Check "while" scope ---------- */
-            if (whileScope > 0)
-            {
-                if (this.CheckWhileScope(entry))
-                    scopeOpener = true;
-                whileScopeChecked = true;
-            }
-
-            /* ---------- Check "do while" scope ---------- */
-            if (doWhileScope > 0)
-            {
-                if (this.CheckDoWhileScope(entry))
-                    scopeOpener = true;
-                doWhileScopeChecked = true;
-            }
-
-            /* ---------- Check "switch" scope ---------- */
-            if (switchScope > 0)
-            {
-                if (this.CheckSwitchScope(entry))
-                    scopeOpener = true;
-                switchScopeChecked = true;
-            }
-
-            /* ---------- Check "if" scope ---------- */
-            if (!ifScopeChecked)
-                if (this.CheckIfScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "else if" scope ---------- */
-            if (!elseIfScopeChecked)
-                if (this.CheckElseIfScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "else" scope ---------- */
-            if (!elseScopeChecked)
-                if (this.CheckElseScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "for" scope ---------- */
-            if (!forScopeChecked)
-                if (this.CheckForScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "foreach" scope ---------- */
-            if (!forEachScopeChecked)
-                if (this.CheckForEachScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "while" scope ---------- */
-            if (!whileScopeChecked)
-                if (this.CheckWhileScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "do while" scope ---------- */
-            if (!doWhileScopeChecked)
-                if (this.CheckDoWhileScope(entry))
-                    scopeOpener = true;
-
-            /* ---------- Check "switch" scope ---------- */
-            if (!switchScopeChecked)
-                if (this.CheckSwitchScope(entry))
-                    scopeOpener = true;
-
-            return scopeOpener;
-        }
-
-        private bool CheckIfScope(string entry)
-        {
-            switch (ifScope)
-            {
-                case 0:
-                    if (entry.Equals("if") && elseIfScope == 0)
-                    {
-                        ifScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("(")) ifScope = 2;
-                    else ifScope = 0;
-                    break;
-                case 2:
-                    ifScope = 3;
-                    break;
-                case 3:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count)
-                    {
-
-                        ifScope = 4;
-                    }
-                    break;
-                case 4:
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("if");
-                    stringBuilder.Clear();
-                    if (entry.Equals("if") && elseIfScope == 0) // check if the next statement starts an "if"
-                    {
-                        ifScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else ifScope = 0; // reset the ifScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckElseIfScope(string entry)
-        {
-            switch (elseIfScope)
-            {
-                case 0:
-                    if (entry.Equals("else"))
-                    {
-                        elseIfScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("if")) elseIfScope = 2;
-                    else elseIfScope = 0;
-                    break;
-                case 2:
-                    if (entry.Equals("(")) elseIfScope = 3;
-                    else elseIfScope = 0;
-                    break;
-                case 3:
-                    elseIfScope = 4;
-                    break;
-                case 4:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) elseIfScope = 5;
-                    break;
-                case 5:
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("else if");
-                    stringBuilder.Clear();
-                    if (entry.Equals("else")) // check if the next statement starts an "else if"
-                    {
-                        elseIfScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else elseIfScope = 0; // reset the elseIfScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckElseScope(string entry)
-        {
-            switch (elseScope)
-            {
-                case 0:
-                    if (entry.Equals("else")) elseScope = 1;
-                    break;
-                case 1:
-                    if (entry.Equals("if"))
-                    {
-                        elseScope = 0;
-                        break;
-                    }
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("else");
-                    stringBuilder.Clear();
-                    if (entry.Equals("else")) // check if the next statement starts an "else"
-                    {
-                        elseScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else elseScope = 0; // reset the elseScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckForScope(string entry)
-        {
-            switch (forScope)
-            {
-                case 0:
-                    if (entry.Equals("for"))
-                    {
-                        forScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("(")) forScope = 2;
-                    else forScope = 0;
-                    break;
-                case 2:
-                    forScope = 3;
-                    break;
-                case 3:
-                    if (entry.Equals(";")) forScope = 4;
-                    break;
-                case 4:
-                    forScope = 5;
-                    break;
-                case 5:
-                    if (entry.Equals(";")) forScope = 6;
-                    break;
-                case 6:
-                    forScope = 7;
-                    break;
-                case 7:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forScope = 8;
-                    break;
-                case 8:
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("for");
-                    stringBuilder.Clear();
-                    if (entry.Equals("for")) // check if the next statement starts a "for"
-                    {
-                        forScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else forScope = 0; // reset the forScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckForEachScope(string entry)
-        {
-            switch (forEachScope)
-            {
-                case 0:
-                    if (entry.Equals("foreach"))
-                    {
-                        forEachScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("(")) forEachScope = 2;
-                    else forEachScope = 0;
-                    break;
-                case 2:
-                    forEachScope = 3;
-                    break;
-                case 3:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forEachScope = 4;
-                    break;
-                case 4:
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("foreach");
-                    stringBuilder.Clear();
-                    if (entry.Equals("foreach")) // check if the next statement starts a "foreach"
-                    {
-                        forEachScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else forEachScope = 0; // reset the forEachScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckWhileScope(string entry)
-        {
-            switch (whileScope)
-            {
-                case 0:
-                    if (entry.Equals("while"))
-                    {
-                        whileScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("(")) whileScope = 2;
-                    else whileScope = 0;
-                    break;
-                case 2:
-                    whileScope = 3;
-                    break;
-                case 3:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) whileScope = 4;
-                    break;
-                case 4:
-                    if (entry.Equals(";"))
-                    {
-                        whileScope = 0;
-                        break;
-                    }
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("while");
-                    stringBuilder.Clear();
-                    if (entry.Equals("while")) // check if the next statement starts a "while"
-                    {
-                        whileScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    else whileScope = 0; // reset the whileScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckDoWhileScope(string entry)
-        {
-            switch (doWhileScope)
-            {
-                case 0:
-                    if (entry.Equals("do")) doWhileScope = 1;
-                    break;
-                case 1:
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("do while");
-                    stringBuilder.Clear();
-                    if (entry.Equals("do")) doWhileScope = 1; // check if the next statement starts a "do while"
-                    else doWhileScope = 0; // reset the doWhileScope rule
-                    return true;
-            }
-            return false;
-        }
-
-        private bool CheckSwitchScope(string entry)
-        {
-            switch (switchScope)
-            {
-                case 0:
-                    if (entry.Equals("switch"))
-                    {
-                        switchScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1:
-                    if (entry.Equals("(")) switchScope = 2;
-                    else switchScope = 0;
-                    break;
-                case 2:
-                    switchScope = 3;
-                    break;
-                case 3:
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) switchScope = 4;
-                    break;
-                case 4:
-                    if (!entry.Equals("{"))
-                    {
-                        switchScope = 0;
-                        break;
-                    }
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("switch");
-                    stringBuilder.Clear();
-                    switchScope = 0; // reset the switchScope rule
-                    return true;
-            }
-            return false;
-        }
-
-
-        /* ---------- General Upkeep ---------- */
-
-        private bool IsComment(string entry)
-        {
+            // Determine entry is within a comment, and check for the end of the comment
             if (scopeStack.Count() > 0)
             {
                 if (scopeStack.Peek().Equals("\""))
@@ -1363,11 +1226,13 @@ namespace CodeAnalyzer
                     if (entry.Equals("\"")) scopeStack.Pop();
                     return true;
                 }
+
                 if (scopeStack.Peek().Equals("'"))
                 {
                     if (entry.Equals("'")) scopeStack.Pop();
                     return true;
                 }
+
                 if (scopeStack.Peek().Equals("//"))
                 {
                     if (entry.Equals(" "))
@@ -1383,17 +1248,35 @@ namespace CodeAnalyzer
                     return true;
                 }
             }
-            return false;
-        }
 
-        private bool StartPlainTextArea(string entry)
-        {
+            // If starting a commented area, push the entry
             if (entry.Equals("\"") || entry.Equals("'") || entry.Equals("//") || entry.Equals("/*"))
             {
                 scopeStack.Push(entry);
                 return true;
             }
+
             return false;
+        }
+
+        /* Remove the function signature from the current class's or interface's text (for relationship analysis) */
+        private void RemoveFunctionSignatureFromTextData(int size)
+        {
+            if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass)
+                || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
+            {
+                int textDataIndex = ((ProgramDataType)typeStack.Peek()).TextData.Count - 1; // Last index of TextData
+
+                // Get the index of the last closing parentheses
+                while (textDataIndex >= 0 && !((ProgramDataType)typeStack.Peek()).TextData[textDataIndex].Equals(")"))
+                    textDataIndex--;
+
+                // Update the size of the function signature
+                size += ((ProgramDataType)typeStack.Peek()).TextData.Count - textDataIndex - 1;
+
+                // Remove the function signature
+                ((ProgramDataType)typeStack.Peek()).TextData = ((ProgramDataType)typeStack.Peek()).TextData.GetRange(0, ((ProgramDataType)typeStack.Peek()).TextData.Count - size);
+            }
         }
 
         /* Updates the StringBuilder in the case of a new statement or scope */
@@ -1410,21 +1293,9 @@ namespace CodeAnalyzer
                 stringBuilder.Append(entry);
             }
         }
-
-        private void RemoveFunctionSignatureFromTextData(int size)
-        {
-            if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass)
-                || typeStack.Peek().GetType() == typeof(ProgramInterface) || typeStack.Peek().GetType() == typeof(ProgramFunction)))
-            {
-                int textDataIndex = ((ProgramDataType)typeStack.Peek()).TextData.Count - 1; // last index of TextData
-                while (textDataIndex >= 0 && !((ProgramDataType)typeStack.Peek()).TextData[textDataIndex].Equals(")")) textDataIndex--; // get the index of the last closing parentheses
-                size += ((ProgramDataType)typeStack.Peek()).TextData.Count - textDataIndex - 1;
-                ((ProgramDataType)typeStack.Peek()).TextData
-                    = ((ProgramDataType)typeStack.Peek()).TextData.GetRange(0, ((ProgramDataType)typeStack.Peek()).TextData.Count - size); // remove function signature
-            }
-        }
     }
 
+    /* Processor of all class and interface relationship data, filling all internal relationship lists */
     class RelationshipProcessor
     {
         ProgramClassType programClassType;
@@ -1436,17 +1307,19 @@ namespace CodeAnalyzer
             this.programClassTypeCollection = programClassTypeCollection;
         }
         
+        /* Starts the relationship processor for a class or interface */
         public void ProcessRelationships()
         {
-            this.SetInheritanceRelationships(); // get the superclass/subclass data from the beginning of the class text
+            this.SetInheritanceRelationships(); // Get the superclass/subclass data from the beginning of the class text
 
-            if (programClassType.GetType() != typeof(ProgramClass)) return; // interfaces only collect inheritance data
+            if (programClassType.GetType() != typeof(ProgramClass)) return; // Interfaces only collect inheritance data
 
-            // (1) get the aggregation data from the class text and text of all children
-            // (2) get the using data from the parameters fields of all child functions
+             /* (1) Get the aggregation data from the class text and text of all children
+              * (2) Get the using data from the parameters fields of all child functions */
             this.SetAggregationAndUsingRelationships(this.programClassType);
         }
 
+        /* Populates superclass and subclass lists related to this class/interface */
         private void SetInheritanceRelationships()
         {
             string entry;
@@ -1458,37 +1331,29 @@ namespace CodeAnalyzer
             {
                 entry = programClassType.TextData[index];
 
-                if (!hasSuperclasses)
+                if (!hasSuperclasses && entry.Equals(":")) // Look for a colon (signifies that the class/interface has a superclass)
                 {
-                    if (entry.Equals(":"))
-                    {
-                        hasSuperclasses = true;
-                        continue;
-                    }
+                    hasSuperclasses = true;
+                    continue;
                 }
 
-                if (entry.Equals("{"))
+                if (entry.Equals("{")) // End the search at the first opening bracket, remove the text that has already been searched
                 {
                     programClassType.TextData = programClassType.TextData.GetRange(++index, programClassType.TextData.Count - index);
                     return;
                 }
 
                 if (entry.Equals("[") || entry.Equals("<"))
-                {
                     brackets++;
+
+                if (brackets > 0) // Ignore text within brackets
+                {
+                    if (entry.Equals("]") || entry.Equals(">"))
+                        brackets--;
                     continue;
                 }
 
-                if (entry.Equals("]") || entry.Equals(">"))
-                {
-                    brackets--;
-                    continue;
-                }
-
-                if (brackets > 0) continue;
-
-                if (hasSuperclasses)
-                {
+                if (hasSuperclasses) // Entry might be a superclass - search the class list
                     if (programClassType.Name != entry && programClassTypeCollection.Contains(entry))
                     {
                         ProgramClassType super = programClassTypeCollection[entry];
@@ -1496,52 +1361,70 @@ namespace CodeAnalyzer
                         programClassType.SuperClasses.Add(super);
                         programClassType.TextData.RemoveAt(index);
                     }
-                }
             }
         }
 
+        /* Populates all relationship lists related to this class, except inheritance */
         private void SetAggregationAndUsingRelationships(ProgramDataType programDataType)
         {
-            // get the aggregation data
-            foreach (string entry in programDataType.TextData)
-            {
-                if (programClassType.Name != entry && programClassTypeCollection.Contains(entry))
-                {
-                    ProgramClassType owned = programClassTypeCollection[entry];
-                    if (!((ProgramClass)programClassType).OwnedClasses.Contains(owned) && owned.GetType() == typeof(ProgramClass))
-                    {
-                        ((ProgramClass)owned).OwnedByClasses.Add(programClassType);
-                        ((ProgramClass)programClassType).OwnedClasses.Add(owned);
-                    }
-                }
-            }
+            // Find and set the aggregation data
+            this.SetAggregationRelationships(programDataType);
 
-            // get the using data
-            if (programDataType.GetType() == typeof(ProgramFunction))
-            {
-                if (((ProgramFunction)programDataType).Parameters.Count > 0)
-                {
-                    foreach (string parameter in ((ProgramFunction)programDataType).Parameters)
-                    {
-                        if (!programClassType.Name.Equals(parameter) && programClassTypeCollection.Contains(parameter))
-                        {
-                            ProgramClassType used = programClassTypeCollection[parameter];
-                            if (!((ProgramClass)programClassType).UsedClasses.Contains(used))
-                            {
-                                used.UsedByClasses.Add(programClassType);
-                                ((ProgramClass)programClassType).UsedClasses.Add(used);
-                            }
-                        }
-                    }
-                }
-            }
+            // Find and set the using data
+            this.SetUsingRelationships(programDataType);
 
-            // repeat for each child, grandchild, etc.
+            // Repeat recursively for each child class and function
             foreach (ProgramType programType in programDataType.ChildList)
             {
                 if (programType.GetType() == typeof(ProgramClass) || programType.GetType() == typeof(ProgramFunction))
                 {
                     this.SetAggregationAndUsingRelationships((ProgramDataType)programType);
+                }
+            }
+        }
+
+        /* Populates the aggregation lists related to this class */
+        private void SetAggregationRelationships(ProgramDataType programDataType)
+        {
+            foreach (string entry in programDataType.TextData)
+            {
+                // Check that "entry" is a different class/interface
+                if (programClassType.Name != entry && programClassTypeCollection.Contains(entry))
+                {
+                    ProgramClassType owned = programClassTypeCollection[entry];
+
+                    // Check that "owned" is a class and is not already in this class's OwnedClasses list
+                    if (!((ProgramClass)programClassType).OwnedClasses.Contains(owned) && owned.GetType() == typeof(ProgramClass))
+                    {
+                        // Add each to the other's list
+                        ((ProgramClass)owned).OwnedByClasses.Add(programClassType);
+                        ((ProgramClass)programClassType).OwnedClasses.Add(owned);
+                    }
+                }
+            }
+        }
+
+        /* Populates the using lists related to this class */
+        private void SetUsingRelationships(ProgramDataType programDataType)
+        {
+            // Check that "programDataType" is a function with parameters
+            if (programDataType.GetType() == typeof(ProgramFunction) && ((ProgramFunction)programDataType).Parameters.Count > 0)
+            {
+                foreach (string parameter in ((ProgramFunction)programDataType).Parameters) // Search the parameters
+                {
+                    // Check that "parameter" is a different class/interface
+                    if (!programClassType.Name.Equals(parameter) && programClassTypeCollection.Contains(parameter))
+                    {
+                        ProgramClassType used = programClassTypeCollection[parameter];
+
+                        // Check that "used" is a class and is not already in this class's UsedClasses list
+                        if (!((ProgramClass)programClassType).UsedClasses.Contains(used) && used.GetType() == typeof(ProgramClass))
+                        {
+                            // Add each to the other's list
+                            used.UsedByClasses.Add(programClassType);
+                            ((ProgramClass)programClassType).UsedClasses.Add(used);
+                        }
+                    }
                 }
             }
         }
