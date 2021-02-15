@@ -1,1 +1,1 @@
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv" CodeAnalyzer.sln /build
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv" CodeAnalyzer.sln /build debug

@@ -18,7 +18,7 @@ using System.IO;
 namespace CodeAnalyzer
 {
     /* Parses input from command line into expected format */
-    class InputReader
+    public class InputReader
     {
         // Format (if options are present): "/S", "/R", "/X", "[path]", "*.[filetype]"
         public string[] FormattedInput { get; private set; }
@@ -126,7 +126,7 @@ namespace CodeAnalyzer
     }
 
     /* Prints the requested code analysis data */
-    class OutputWriter
+    public class OutputWriter
     {
         private List<string> Lines { get; }
         private StringBuilder line = new StringBuilder("");
@@ -135,7 +135,7 @@ namespace CodeAnalyzer
         public OutputWriter() => Lines = new List<string>();
 
         /* Route the files to the appropriate output writer */
-        public void WriteOutput(List<ProgramFile> processedFileList, string directoryPath, bool printToXML, bool printRelationships)
+        public void WriteOutput(List<ProgramFile> processedFileList, string directoryPath, string fileType, bool printToXML, bool printRelationships)
         {
             foreach (ProgramFile file in processedFileList)
             {
@@ -155,12 +155,8 @@ namespace CodeAnalyzer
                 Console.Write("\n");
             }
 
-            if (printToXML)
-            {
-                // Write to the file
-                if (this.WriteFile(this.NewFilePath(directoryPath, directoryPath.Split('\\')[directoryPath.Split('\\').Length - 1], printRelationships)))
-                    Console.WriteLine("\nCode analysis XML file written!\n");
-            }
+            if (printToXML) // Write to the file
+                this.WriteFile(directoryPath, directoryPath.Split('\\')[directoryPath.Split('\\').Length - 1], fileType, printRelationships);
         }
 
         /* Prints function data to standard output */
@@ -589,27 +585,40 @@ namespace CodeAnalyzer
         }
 
         /* Sets the filename and filepath to the specified path for the new XML file */
-        private string NewFilePath(string directoryPath, string directoryName, bool printRelationships)
+        private string NewFilePath(string directoryPath, string directoryName, string fileType, bool printRelationships)
         {
+            string fileName;
+
             if (printRelationships)
-                return directoryPath + "\\" + directoryName + "_relationships.xml";
+                fileName = directoryPath + "\\" + directoryName + "_relationships";
             else
-                return directoryPath + "\\" + directoryName + "_functions.xml";
+                fileName = directoryPath + "\\" + directoryName + "_functions";
+
+            if (fileType.Equals("*.cs"))
+                fileName += ".cs";
+            else if (fileType.Equals("*.txt"))
+                fileName += ".txt";
+
+            return fileName + ".xml";
         }
 
         /* Writes all lines to the XML file */
-        private bool WriteFile(string filePath)
+        private void WriteFile(string directoryPath, string directoryName, string fileType, bool printRelationships)
         {
+            string filePath = this.NewFilePath(directoryPath, directoryName, fileType, printRelationships);
+
             try
             {
                 File.WriteAllLines(filePath, Lines.ToArray());
+                if (printRelationships)
+                    Console.WriteLine("\nRelationship analysis XML file written!\n");
+                else
+                    Console.WriteLine("\nFunction analysis XML file written!\n");
             }
             catch
             {
                 Console.WriteLine("\nError: Unable to write to a new XML file.\n");
-                return false;
             }
-            return true;
         }
 
         /* Prints appropriate number of tabs for current line to standard output */

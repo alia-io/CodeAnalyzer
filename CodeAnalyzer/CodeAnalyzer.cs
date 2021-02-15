@@ -19,7 +19,7 @@ using System.Text;
 namespace CodeAnalyzer
 {
     /* Pre-processor of file text into a list of strings */
-    class FileProcessor
+    public class FileProcessor
     {
         private ProgramFile programFile;
         private StringBuilder stringBuilder = new StringBuilder();
@@ -1433,7 +1433,7 @@ namespace CodeAnalyzer
                         if (!((ProgramClass)programClassType).UsedClasses.Contains(used) && used.GetType() == typeof(ProgramClass))
                         {
                             // Add each to the other's list
-                            used.UsedByClasses.Add(programClassType);
+                            ((ProgramClass)used).UsedByClasses.Add(programClassType);
                             ((ProgramClass)programClassType).UsedClasses.Add(used);
                         }
                     }

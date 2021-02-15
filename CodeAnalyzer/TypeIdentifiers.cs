@@ -15,7 +15,7 @@ using System.Collections.ObjectModel;
 
 namespace CodeAnalyzer
 {
-
+    /* Defines core information for all relevant program types: files, namespaces, classes, interfaces, and functions */
     public abstract class ProgramType
     {
         public virtual string Name { get; set; }
@@ -27,7 +27,8 @@ namespace CodeAnalyzer
         }
     }
 
-    public abstract class ProgramDataType : ProgramType   // ProgramDataType includes classes, interfaces, and functions (the types that hold data)
+    /* Defines core information for types that hold relevant analysis data: classes, interfaces, and functions */
+    public abstract class ProgramDataType : ProgramType
     {
         public List<string> TextData { get; set; }
         public string Modifiers { get; }
@@ -38,21 +39,20 @@ namespace CodeAnalyzer
         }
     }
 
-    public abstract class ProgramClassType : ProgramDataType     // ProgramClassType includes all classes and interfaces
+    /* Defines core information for types that "behave" or "look" like classes: classes and interfaces */
+    public abstract class ProgramClassType : ProgramDataType
     {
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
-        public List<ProgramClassType> SubClasses { get; }       // *Inheritance* - ProgramClass(es) that this class is inherited by
-        public List<ProgramClassType> SuperClasses { get; }     // *Inheritance* - ProgramClass(es) that this class inherits from
-        public List<ProgramClassType> UsedByClasses { get; }    // *Using* - ProgramClass(es) that this ProgramClass is used by
+        public List<ProgramClassType> SubClasses { get; }       // Inheritance (child data): ProgramType(s) that this type is inherited by
+        public List<ProgramClassType> SuperClasses { get; }     // Inheritance (parent data): ProgramType(s) that this type inherits from
 
         public ProgramClassType(string name, string modifiers) : base(name, modifiers) 
         { 
             this.SubClasses = new List<ProgramClassType>();
             this.SuperClasses = new List<ProgramClassType>();
-            this.UsedByClasses = new List<ProgramClassType>();
         }
 
-        public override string Name
+        public override string Name // Maintain the ProgramClassTypeCollection if a name changes
         {
             get { return base.Name; }
             set
@@ -61,8 +61,17 @@ namespace CodeAnalyzer
                 base.Name = value;
             }
         }
+
+        public override bool Equals(object obj) // Defines equality based on name
+        {
+            if (this.GetType() != obj.GetType()) return false;
+            return (base.Name).Equals(((ProgramType)obj).Name);
+        }
+
+        public override int GetHashCode() { return this.Name.GetHashCode(); } // HashCode based on name
     }
 
+    /* Defines unique data contained in an object representing a file */
     public class ProgramFile : ProgramType
     {
         public string FilePath { get; }
@@ -76,42 +85,29 @@ namespace CodeAnalyzer
         }
     }
 
+    /* Defines unique data contained in an object representing a namespace */
     public class ProgramNamespace : ProgramType { public ProgramNamespace(string name) : base(name) { } }
 
+    /* Defines unique data contained in an object representing a class */
     public class ProgramClass : ProgramClassType 
     {
-        public List<ProgramClassType> OwnedClasses { get; }     // *Composition/Aggregation* - ProgramClass(es) that are "part of" (owned by) this ProgramClass
-        public List<ProgramClassType> OwnedByClasses { get; }   // *Composition/Aggregation* - ProgramClass(es) that this ProgramClass is "part of"
-        public List<ProgramClassType> UsedClasses { get; }      // *Using* - ProgramClass(es) that this ProgramClass uses
+        public List<ProgramClassType> OwnedClasses { get; }     // Composition/Aggregation (child data): ProgramClass(es) that are owned by ("part of") this class
+        public List<ProgramClassType> OwnedByClasses { get; }   // Composition/Aggregation (parent data): ProgramClass(es) that this class is owned by ("part of")
+        public List<ProgramClassType> UsedClasses { get; }      // Using (child data): ProgramClass(es) that this class uses
+        public List<ProgramClassType> UsedByClasses { get; }    // Using (parent data): ProgramClass(es) that this class is used by
         public ProgramClass(string name, string modifiers) : base(name, modifiers) 
         {
             this.OwnedClasses = new List<ProgramClassType>();
             this.OwnedByClasses = new List<ProgramClassType>();
             this.UsedClasses = new List<ProgramClassType>();
+            this.UsedByClasses = new List<ProgramClassType>();
         }
-
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() != typeof(ProgramClass)) return false;
-            return (base.Name).Equals(((ProgramClass)obj).Name);
-        }
-
-        public override int GetHashCode() { return base.GetHashCode(); }
     }
 
-    public class ProgramInterface : ProgramClassType 
-    { 
-        public ProgramInterface(string name, string modifiers) : base(name, modifiers) { }
+    /* Defines unique data contained in an object representing an interface */
+    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
 
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() != typeof(ProgramInterface)) return false;
-            return (base.Name).Equals(((ProgramInterface)obj).Name);
-        }
-
-        public override int GetHashCode() { return base.GetHashCode(); }
-    }
-
+    /* Defines unique data contained in an object representing a function */
     public class ProgramFunction : ProgramDataType
     {
         public string ReturnType { get; }
@@ -129,7 +125,7 @@ namespace CodeAnalyzer
         }
     }
 
-    /* KeyedCollection for ProgramClassType */
+    /* KeyedCollection for ProgramClassType - allows for quick retrieval of ProgramClassTypes by both index and key (name) */
     public class ProgramClassTypeCollection : KeyedCollection<string, ProgramClassType>
     {
         internal void NotifyNameChange(ProgramClassType programClassType, string newName) =>
@@ -156,5 +152,4 @@ namespace CodeAnalyzer
             base.ClearItems();
         }
     }
-
 }

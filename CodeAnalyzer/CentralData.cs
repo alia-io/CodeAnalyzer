@@ -16,7 +16,7 @@ using System.IO;
 namespace CodeAnalyzer
 {
     /* Stores all data needed for code analysis and output writing */
-    class CodeAnalysisData
+    public class CodeAnalysisData
     {
         public List<ProgramFile> ProcessedFiles { get; } // List of file objects with all subtypes
         public ProgramClassTypeCollection ProgramClassTypes { get; } // Collection of all classes and interfaces in all files
@@ -31,12 +31,12 @@ namespace CodeAnalyzer
     /* Stores the directory path, filetype, unprocessed file queue, and optional arguments */
     public class InputSessionData
     {
-        public string DirectoryPath { get; set; }
-        private string fileType;
-        public Queue<ProgramFile> FileQueue { get; set; }
-        public bool IncludeSubdirectories { get; set; }
-        public bool SetRelationshipData { get; set; }
-        public bool PrintToXml { get; set; }
+        public string DirectoryPath { get; private set; }
+        public string FileType { get; private set; }
+        public Queue<ProgramFile> FileQueue { get; private set; }
+        public bool IncludeSubdirectories { get; private set; }
+        public bool SetRelationshipData { get; private set; }
+        public bool PrintToXml { get; private set; }
 
         public InputSessionData()
         {
@@ -46,42 +46,38 @@ namespace CodeAnalyzer
             this.PrintToXml = false;
         }
 
+        /* Sets the file type to analyze and the optional settings */
         public void SetInputSessionData(string[] input)
         {
             this.DirectoryPath = input[3];
 
             if (input[0].Equals("/S"))
-            {
                 this.IncludeSubdirectories = true;
-            }
             
             if (input[1].Equals("/R"))
-            {
                 this.SetRelationshipData = true;
-            }
             
             if (input[2].Equals("/X"))
-            {
                 this.PrintToXml = true;
-            }
 
             if (input[4].Equals("*.cs") || input[4].Equals("*.txt"))
-                this.fileType = input[4];
+                this.FileType = input[4];
                 
         }
 
+        /* Reads all files, creates and enqueues the ProgramFile objects with their raw text data */
         public void EnqueueFiles()
         {
             string[] filePaths;
 
-            if (this.fileType.Equals("*.cs") || this.fileType.Equals("*.txt"))
+            if (this.FileType.Equals("*.cs") || this.FileType.Equals("*.txt"))
             {
                 if (this.IncludeSubdirectories)
-                    filePaths = Directory.GetFiles(this.DirectoryPath, this.fileType, SearchOption.AllDirectories);
+                    filePaths = Directory.GetFiles(this.DirectoryPath, this.FileType, SearchOption.AllDirectories);
                 else
-                    filePaths = Directory.GetFiles(this.DirectoryPath, this.fileType, SearchOption.TopDirectoryOnly);
+                    filePaths = Directory.GetFiles(this.DirectoryPath, this.FileType, SearchOption.TopDirectoryOnly);
 
-                foreach (string filePath in filePaths)
+                foreach (string filePath in filePaths) // Read and enqueue all files
                 {
                     string[] filePathArray = filePath.Split('\\');
                     string fileName = filePathArray[filePathArray.Length - 1];

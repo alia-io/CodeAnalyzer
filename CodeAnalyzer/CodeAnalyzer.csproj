@@ -45,11 +45,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CentralData.cs" />
+    <Compile Include="Executive.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="CodeAnalyzer.cs" />
     <Compile Include="InputOutput.cs" />
     <Compile Include="TypeIdentifiers.cs" />
-    <Compile Include="MainControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
