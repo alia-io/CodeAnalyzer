@@ -28,7 +28,7 @@ namespace CodeAnalyzer
         }
     }
 
-    /* Stores the directory,  */
+    /* Stores the directory path, filetype, unprocessed file queue, and optional arguments */
     public class InputSessionData
     {
         public string DirectoryPath { get; set; }
