@@ -146,16 +146,13 @@ namespace CodeAnalyzer
                     else
                         this.WriteFunctionsXML(file);
                 }
+                // Write to the console
+                Console.Write("\n");
+                if (printRelationships)
+                    this.PrintRelationships(file);
                 else
-                {
-                    // Write to the console
-                    Console.Write("\n");
-                    if (printRelationships)
-                        this.PrintRelationships(file);
-                    else
-                        this.PrintFunctions(file);
-                    Console.Write("\n");
-                }
+                    this.PrintFunctions(file);
+                Console.Write("\n");
             }
 
             if (printToXML)
@@ -171,8 +168,7 @@ namespace CodeAnalyzer
         {
             PrintTabs();
 
-            /* Write the new element's name and data */
-
+            // Find the type of the element, print its name (and data, when relevant)
             if (programType.GetType() == typeof(ProgramFile))
                 this.PrintProgramFile((ProgramFile)programType);
 
@@ -188,13 +184,13 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramFunction))
             {
                 this.PrintProgramFunction((ProgramFunction)programType);
+                // Also print analysis data for functions
                 this.PrintFunctionAnalysisData((ProgramFunction)programType);
             }
 
-            /* Repeat recursively with child data */
-            if (programType.ChildList.Count > 0)
-                foreach (ProgramType child in programType.ChildList)
-                    PrintFunctions(child);
+            // Repeat recursively for each child
+            foreach (ProgramType child in programType.ChildList)
+                PrintFunctions(child);
 
             if (programType.GetType() != typeof(ProgramFile)) tabs--;
         }
@@ -204,8 +200,7 @@ namespace CodeAnalyzer
         {
             PrintTabs();
 
-            /* Write the new element's name and data */
-
+            // Find the type of the element, print its name (and data, when relevant)
             if (programType.GetType() == typeof(ProgramFile))
                 this.PrintProgramFile((ProgramFile)programType);
 
@@ -215,33 +210,33 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramClass))
             {
                 this.PrintProgramClass((ProgramClass)programType);
+                // Also print analysis data for classes
                 this.PrintClassAnalysisData((ProgramClass)programType);
             }
 
             else if (programType.GetType() == typeof(ProgramInterface))
             {
                 this.PrintProgramInterface((ProgramInterface)programType);
+                // Also print analysis data for interfaces
                 this.PrintInterfaceAnalysisData((ProgramInterface)programType);
             }
 
             else if (programType.GetType() == typeof(ProgramFunction))
                 this.PrintProgramFunction((ProgramFunction)programType);
 
-            /* Repeat recursively with child data */
-            if (programType.ChildList.Count > 0)
-                foreach (ProgramType child in programType.ChildList)
-                    PrintRelationships(child);
+            // Repeat recursively for each child
+            foreach (ProgramType child in programType.ChildList)
+                PrintRelationships(child);
 
             if (programType.GetType() != typeof(ProgramFile)) tabs--;
         }
 
-        /* Writes function data to XML file */
+        /* Adds lines to write function data to XML file */
         private void WriteFunctionsXML(ProgramType programType)
         {
             GetTabs(ref line);
 
-            /* ---------- Open the new element ---------- */
-
+            // Find the type and open the new element
             if (programType.GetType() == typeof(ProgramFile))
                 this.WriteProgramFile((ProgramFile)programType);
 
@@ -257,29 +252,27 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramFunction))
             {
                 this.WriteProgramFunction((ProgramFunction)programType);
+                // Also write analysis data for functions
                 this.WriteFunctionAnalysisData((ProgramFunction)programType);
             }
 
-            /* ---------- Repeat recursively with child data ---------- */
-            if (programType.ChildList.Count > 0)
-                foreach (ProgramType child in programType.ChildList)
-                    WriteFunctionsXML(child);
+            // Repeat recursively for each child
+            foreach (ProgramType child in programType.ChildList)
+                WriteFunctionsXML(child);
 
-            /* ---------- Close the element ---------- */
             tabs--;
             if (programType.ChildList.Count > 0 || programType.GetType() == typeof(ProgramFunction))
                 GetTabs(ref line);
 
-            this.WriteClosingTag(programType);
+            this.WriteClosingTag(programType); // Close the element
         }
 
-        /* Writes relationship data to XML file */
+        /* Adds lines to write relationship data to XML file */
         private void WriteRelationshipsXML(ProgramType programType)
         {
             GetTabs(ref line);
 
-            /* ---------- Open the new element ---------- */
-
+            // Find the type and open the new element
             if (programType.GetType() == typeof(ProgramFile))
                 this.WriteProgramFile((ProgramFile)programType);
 
@@ -289,22 +282,22 @@ namespace CodeAnalyzer
             else if (programType.GetType() == typeof(ProgramClass))
             {
                 this.WriteProgramClass((ProgramClass)programType);
+                // Also write analysis data for classes
                 this.WriteClassAnalysisData((ProgramClass)programType);
             }
             else if (programType.GetType() == typeof(ProgramInterface))
             {
                 this.WriteProgramInterface((ProgramInterface)programType);
+                // Also write analysis data for interfaces
                 this.WriteInterfaceAnalysisData((ProgramInterface)programType);
             }
             else if (programType.GetType() == typeof(ProgramFunction))
                 this.WriteProgramFunction((ProgramFunction)programType);
 
-            /* ---------- Repeat recursively with child data ---------- */
-            if (programType.ChildList.Count > 0)
-                foreach (ProgramType child in programType.ChildList)
-                    WriteRelationshipsXML(child);
+            // Repeat recursively for each child
+            foreach (ProgramType child in programType.ChildList)
+                WriteRelationshipsXML(child);
 
-            /* ---------- Close the element ---------- */
             tabs--;
             if (programType.ChildList.Count > 0
                 || (programType.GetType() == typeof(ProgramInterface) && (((ProgramInterface)programType).SubClasses.Count > 0 || ((ProgramInterface)programType).SuperClasses.Count > 0))
@@ -313,9 +306,10 @@ namespace CodeAnalyzer
                 || ((ProgramClass)programType).UsedByClasses.Count > 0 || ((ProgramClass)programType).UsedClasses.Count > 0)))
                     GetTabs(ref line);
 
-            this.WriteClosingTag(programType);
+            this.WriteClosingTag(programType); // Close the element
         }
 
+        /* Prints file name to standard output */
         private void PrintProgramFile(ProgramFile programFile)
         {
             Console.Write("----------------------------------------------------------------------\n");
@@ -323,30 +317,35 @@ namespace CodeAnalyzer
             Console.Write("\n----------------------------------------------------------------------\n");
         }
 
+        /* Prints namespace name to standard output */
         private void PrintProgramNamespace(ProgramNamespace programNamespace)
         {
             Console.Write("Namespace: " + programNamespace.Name);
             tabs++;
         }
 
+        /* Prints file name to standard output */
         private void PrintProgramClass(ProgramClass programClass)
         {
             Console.Write("Class: " + programClass.Name);
             tabs++;
         }
 
+        /* Prints interface name to standard output */
         private void PrintProgramInterface(ProgramInterface programInterface)
         {
             Console.Write("Interface: " + programInterface.Name);
             tabs++;
         }
 
+        /* Prints function name to standard output */
         private void PrintProgramFunction(ProgramFunction programFunction)
         {
             Console.Write("Function: " + programFunction.Name);
             tabs++;
         }
 
+        /* Adds XML file tag to line */
         private void WriteProgramFile(ProgramFile programFile)
         {
             line.Append("<file name = \"");
@@ -355,6 +354,7 @@ namespace CodeAnalyzer
             tabs++;
         }
 
+        /* Adds XML namespace tag to line */
         private void WriteProgramNamespace(ProgramNamespace programNamespace)
         {
             line.Append("<namespace name = \"");
@@ -363,6 +363,7 @@ namespace CodeAnalyzer
             tabs++;
         }
 
+        /* Adds XML class tag to line */
         private void WriteProgramClass(ProgramClass programClass)
         {
             line.Append("<class name = \"");
@@ -371,6 +372,7 @@ namespace CodeAnalyzer
             tabs++;
         }
 
+        /* Adds XML interface tag to line */
         private void WriteProgramInterface(ProgramInterface programInterface)
         {
             line.Append("<interface name = \"");
@@ -379,6 +381,7 @@ namespace CodeAnalyzer
             tabs++;
         }
 
+        /* Adds XML function tag to line */
         private void WriteProgramFunction(ProgramFunction programFunction)
         {
             line.Append("<function name = \"");
@@ -387,16 +390,19 @@ namespace CodeAnalyzer
             tabs++;
         }
 
+        /* Prints the function's size and complexity to standard output */
         private void PrintFunctionAnalysisData(ProgramFunction programFunction)
         {
             tabs++;
             PrintTabs();
             Console.Write(">---> Size: " + programFunction.Size);
+
             PrintTabs();
             Console.Write(">---> Complexity: " + programFunction.Complexity);
             tabs--;
         }
 
+        /* Prints the class's relationship information to standard output */
         private void PrintClassAnalysisData(ProgramClass programClass)
         {
             this.PrintInheritanceData(programClass);
@@ -448,12 +454,14 @@ namespace CodeAnalyzer
             tabs--;
         }
 
+        /* Prints the interface's relationship information to standard output */
         private void PrintInterfaceAnalysisData(ProgramInterface programInterface)
         {
             this.PrintInheritanceData(programInterface);
             tabs--;
         }
 
+        /* Prints the inheritance information for a class or interface to standard output */
         private void PrintInheritanceData(ProgramClassType programClassType)
         {
             tabs++;
@@ -481,6 +489,7 @@ namespace CodeAnalyzer
             }
         }
 
+        /* Adds XML tags for the function's size and complexity */
         private void WriteFunctionAnalysisData(ProgramFunction programFunction)
         {
             GetTabs(ref line);
@@ -494,6 +503,7 @@ namespace CodeAnalyzer
             line.Append("</complexity>");
         }
 
+        /* Adds XML tags for the class's relationship data */
         private void WriteClassAnalysisData(ProgramClass programClass)
         {
             this.WriteInheritanceData(programClass);
@@ -535,11 +545,13 @@ namespace CodeAnalyzer
                 }
         }
 
+        /* Adds XML tags for the interface's relationship data */
         private void WriteInterfaceAnalysisData(ProgramInterface programInterface)
         {
             this.WriteInheritanceData(programInterface);
         }
 
+        /* Adds XML tags of the inheritance information for a class or interface */
         private void WriteInheritanceData(ProgramClassType programClassType)
         {
             if (programClassType.SuperClasses.Count > 0) // Inheritance, parents
@@ -561,6 +573,7 @@ namespace CodeAnalyzer
                 }
         }
 
+        /* Adds the type's closing tag */
         private void WriteClosingTag(ProgramType programType)
         {
             if (programType.GetType() == typeof(ProgramFile))
@@ -584,6 +597,7 @@ namespace CodeAnalyzer
                 return directoryPath + "\\" + directoryName + "_functions.xml";
         }
 
+        /* Writes all lines to the XML file */
         private bool WriteFile(string filePath)
         {
             try
@@ -598,6 +612,7 @@ namespace CodeAnalyzer
             return true;
         }
 
+        /* Prints appropriate number of tabs for current line to standard output */
         private void PrintTabs()
         {
             Console.Write("\n");
@@ -606,6 +621,7 @@ namespace CodeAnalyzer
                 Console.Write("    ");
         }
 
+        /* Adds appropriate number of tabs for the current line to XML file text */
         private void GetTabs(ref StringBuilder line)
         {
             if (line.Length > 0)
