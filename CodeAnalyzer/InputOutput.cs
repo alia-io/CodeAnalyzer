@@ -5,16 +5,14 @@
 ///  Language:      C#                                                                ///
 ///  Platform:      Dell G5 5090, Windows 10                                          ///
 ///  Application:   CodeAnalyzer - Project #2 for                                     ///
-///                 CSE681: Software Modeling and Analysis                            ///
+///                 CSE 681: Software Modeling and Analysis                           ///
 ///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
 ///                                                                                   ///
 /////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace CodeAnalyzer
@@ -22,35 +20,30 @@ namespace CodeAnalyzer
     /* Parses input from command line into expected format */
     class InputReader
     {
+        // Format (if options are present): "/S", "/R", "/X", "[path]", "*.[filetype]"
         public string[] FormattedInput { get; private set; }
-            // Format (if options are present): "/S", "/R", "/X", "[path]"
 
         public string ErrorMessage { get; private set; }
 
         public InputReader()
         {
-            this.FormattedInput = new string[4] { "", "", "", "" };
-            this.ErrorMessage = "";
-        }
-
-
-        /* Returns true if successful; returns false if invalid argument */
-        public bool FormatInput(string[] args)
-        {
-            if (args.Length < 1)
-            {
-                this.ErrorMessage = "Needs more command line arguments.";
-                return false;
-            }
-
+            this.FormattedInput = new string[5] { "", "", "", "", "" };
             this.ErrorMessage = "\nArguments must include a valid directory path." +
                 "\nPaths with spaces must be surrounded by quotation marks." +
+                "\nThe file type to analyze must be specified: *.cs or *.txt." +
                 "\nAdditional arguments are optional. Valid arguments include:" +
                 "\n\t/S - inlude subdirectories" +
                 "\n\t/R - analyze relationship data" +
                 "\n\t/X - print data to XML document";
+        }
 
-            for (int i = 0; i < args.Length; i++)
+        /* Accepts array of command line arguments; returns true if expected input, false if invalid argument */
+        public bool FormatInput(string[] args)
+        {
+            if (args.Length < 2) // Need at least path and filetype arguments
+                return false;
+
+            for (int i = 0; i < args.Length; i++) // Check each argument
             {
                 if (!this.SetInputField(args[i]))
                 {
@@ -58,15 +51,17 @@ namespace CodeAnalyzer
                 }
             }
 
+            // Path and filetype are not optional arguments
+            if (this.FormattedInput[3].Equals("") || this.FormattedInput[4].Equals(""))
+                return false;
+
             return true;
         }
 
-        /* Returns true if successful; returns false if invalid argument */
+        /* Tests a single argument for validity - saves it to FormattedInput if valid */
         private bool SetInputField(string arg)
         {
-            /* Test Option input */
-
-            if (arg.ToLower().Equals("/s"))
+            if (arg.ToLower().Equals("/s")) // Check for subdirectory option
             {
                 if (this.FormattedInput[0].Equals(""))
                 {
@@ -76,7 +71,7 @@ namespace CodeAnalyzer
                 return false;
             }
 
-            if (arg.ToLower().Equals("/r"))
+            if (arg.ToLower().Equals("/r")) // Check for relationship option
             {
                 if (this.FormattedInput[1].Equals(""))
                 {
@@ -86,7 +81,7 @@ namespace CodeAnalyzer
                 return false;
             }
 
-            if (arg.ToLower().Equals("/x"))
+            if (arg.ToLower().Equals("/x")) // Check for xml option
             {
                 if (this.FormattedInput[2].Equals(""))
                 {
@@ -96,11 +91,21 @@ namespace CodeAnalyzer
                 return false;
             }
 
+            if (arg.ToLower().Equals("*.cs") || arg.ToLower().Equals("*.txt")) // Check for filetype
+            {
+                if (this.FormattedInput[4].Equals(""))
+                {
+                    this.FormattedInput[4] = arg.ToLower();
+                    return true;
+                }
+                return false;
+            }
+
             /* Test Directory Path input */
             return this.TestDirectoryPath(arg);
         }
 
-        /* Returns true if successful; returns false if invalid argument */
+        /* Tests whether an argument is a valid directory path - saves it to FormattedInput if valid */
         private bool TestDirectoryPath(string arg)
         {
             try
@@ -125,21 +130,30 @@ namespace CodeAnalyzer
         }
     }
 
+    /* Prints the requested code analysis data */
     class OutputWriter
     {
+        private List<string> Lines { get; }
+        private StringBuilder line = new StringBuilder("");
         private int tabs = 0;
 
+        public OutputWriter() => Lines = new List<string>();
+
         /* Route the files to the appropriate output writer */
-        public void WriteOutput(List<ProgramFile> processedFileList, bool printToXML, bool printRelationships)
+        public void WriteOutput(List<ProgramFile> processedFileList, string directoryPath, /*string directoryName,*/ bool printToXML, bool printRelationships)
         {
             foreach (ProgramFile file in processedFileList)
             {
-                if (printToXML && printRelationships)
-                    this.WriteRelationshipsXML(file);
-                else if (printToXML)
-                    this.WriteFunctionsXML(file);
+                if (printToXML)
+                {
+                    if (printRelationships)
+                        this.WriteRelationshipsXML(file);
+                    else
+                        this.WriteFunctionsXML(file);
+                }
                 else
                 {
+                    // Write to the console
                     Console.Write("\n");
                     if (printRelationships)
                         this.PrintRelationships(file);
@@ -148,13 +162,22 @@ namespace CodeAnalyzer
                     Console.Write("\n");
                 }
             }
+
+            if (printToXML)
+            {
+                // Write to the file
+                string directoryName = directoryPath.Split('\\')[directoryPath.Split('\\').Length - 1];
+                if (this.WriteFile(this.NewFilePath(directoryPath, directoryName, printRelationships)))
+                    Console.WriteLine("\nCode analysis XML file written!\n");
+            }
         }
 
+        /* Prints function data to standard output */
         private void PrintFunctions(ProgramType programType)
         {
             PrintTabs();
 
-            /* ---------- Write the new element's name and data ---------- */
+            /* Write the new element's name and data */
 
             if (programType.GetType() == typeof(ProgramFile))
             {
@@ -185,27 +208,28 @@ namespace CodeAnalyzer
             {
                 Console.Write("Function: " + programType.Name);
                 tabs += 2;
-                /* ---------- Print function data ---------- */
+                /* Print function data */
                 PrintTabs();
                 Console.Write(">---> Size: " + ((ProgramFunction)programType).Size);
                 PrintTabs();
                 Console.Write(">---> Complexity: " + ((ProgramFunction)programType).Complexity);
-                tabs--; // reset tabs
+                tabs--; // Reset tabs
             }
 
-            /* ---------- Repeat with child data ---------- */
+            /* Repeat recursively with child data */
             if (programType.ChildList.Count > 0)
                 foreach (ProgramType child in programType.ChildList)
                     PrintFunctions(child);
 
-            if (programType.GetType() != typeof(ProgramFile)) tabs--; // reset tabs
+            if (programType.GetType() != typeof(ProgramFile)) tabs--; // Reset tabs
         }
 
+        /* Prints relationship data to standard output */
         private void PrintRelationships(ProgramType programType)
         {
             PrintTabs();
 
-            /* ---------- Write the new element's name and data ---------- */
+            /* Write the new element's name and data */
 
             if (programType.GetType() == typeof(ProgramFile))
             {
@@ -225,7 +249,7 @@ namespace CodeAnalyzer
                 Console.Write("Class: " + programType.Name);
                 tabs += 2;
 
-                /* ---------- Print class/interface data ---------- */
+                /* Print class/interface relationship data */
 
                 if (((ProgramClass)programType).SuperClasses.Count > 0) // Inheritance, parents
                 {
@@ -316,7 +340,7 @@ namespace CodeAnalyzer
                         Console.Write(", " + usedclass.Name);
                     }
                 }
-                tabs--; // reset tabs
+                tabs--; // Reset tabs
             }
 
             else if (programType.GetType() == typeof(ProgramInterface))
@@ -324,7 +348,7 @@ namespace CodeAnalyzer
                 Console.Write("Interface: " + programType.Name);
                 tabs += 2;
 
-                /* ---------- Print class/interface data ---------- */
+                /* Print class/interface relationship data */
 
                 if (((ProgramInterface)programType).SuperClasses.Count > 0) // Inheritance, parents
                 {
@@ -389,148 +413,263 @@ namespace CodeAnalyzer
                 tabs++;
             }
 
-            /* ---------- Repeat with child data ---------- */
+            /* Repeat recursively with child data */
             if (programType.ChildList.Count > 0)
                 foreach (ProgramType child in programType.ChildList)
                     PrintRelationships(child);
 
-            if (programType.GetType() != typeof(ProgramFile)) tabs--; // reset tabs
+            if (programType.GetType() != typeof(ProgramFile)) tabs--; // Reset tabs
         }
 
+        /* Sets the filename and filepath to the specified path for the new XML file */
+        private string NewFilePath(string directoryPath, string directoryName, bool printRelationships)
+        {
+            if (printRelationships)
+                return directoryPath + "\\" + directoryName + "_relationships.xml";
+            else
+                return directoryPath + "\\" + directoryName + "_functions.xml";
+        }
+
+        /* Writes function data to XML file */
         private void WriteFunctionsXML(ProgramType programType)
         {
-
-        }
-
-        private void WriteRelationshipsXML(ProgramType programType)
-        {
-
-        }
-
-        private void PrintAllOutputXML(ProgramType programType)
-        {
-            PrintTabs();
+            GetTabs(ref line);
 
             /* ---------- Open the new element ---------- */
             if (programType.GetType() == typeof(ProgramFile))
             {
-                Console.Write("<file name = \"" + programType.Name + "\">");
+                line.Append("<file name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
                 tabs++;
             }
             else if (programType.GetType() == typeof(ProgramNamespace))
             {
-                Console.Write("<namespace name = \"" + programType.Name + "\">");
+                line.Append("<namespace name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
                 tabs++;
             }
             else if (programType.GetType() == typeof(ProgramClass))
             {
-                Console.Write("<class name = \"" + programType.Name + "\">");
+                line.Append("<class name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
+                tabs++;
+            }
+            else if (programType.GetType() == typeof(ProgramInterface))
+            {
+                line.Append("<interface name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
+                tabs++;
+            }
+            else if (programType.GetType() == typeof(ProgramFunction))
+            {
+                line.Append("<function name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
+                tabs++;
+
+                GetTabs(ref line);
+                line.Append("<size>");
+                line.Append(((ProgramFunction)programType).Size);
+                line.Append("</size>");
+
+                GetTabs(ref line);
+                line.Append("<complexity>");
+                line.Append(((ProgramFunction)programType).Complexity);
+                line.Append("</complexity>");
+            }
+
+            /* ---------- Repeat recursively with child data ---------- */
+            if (programType.ChildList.Count > 0)
+                foreach (ProgramType child in programType.ChildList)
+                    WriteFunctionsXML(child);
+
+            /* ---------- Close the element ---------- */
+            tabs--;
+            if (programType.ChildList.Count > 0)
+                GetTabs(ref line);
+            if (programType.GetType() == typeof(ProgramFile))
+                line.Append("</file>");
+            else if (programType.GetType() == typeof(ProgramNamespace))
+                line.Append("</namespace>");
+            else if (programType.GetType() == typeof(ProgramClass))
+                line.Append("</class>");
+            else if (programType.GetType() == typeof(ProgramInterface))
+                line.Append("</interface>");
+            else if (programType.GetType() == typeof(ProgramFunction))
+                line.Append("</function>");
+        }
+
+        /* Writes relationship data to XML file */
+        private void WriteRelationshipsXML(ProgramType programType)
+        {
+            GetTabs(ref line);
+
+            /* ---------- Open the new element ---------- */
+            if (programType.GetType() == typeof(ProgramFile))
+            {
+                line.Append("<file name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
+                tabs++;
+            }
+            else if (programType.GetType() == typeof(ProgramNamespace))
+            {
+                line.Append("<namespace name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
+                tabs++;
+            }
+            else if (programType.GetType() == typeof(ProgramClass))
+            {
+                line.Append("<class name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
                 tabs++;
 
                 if (((ProgramClass)programType).SuperClasses.Count > 0) // Inheritance, parents
                     foreach (ProgramClassType superclass in ((ProgramClass)programType).SuperClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<inheritance_parent>" + superclass.Name + "</inheritance_parent>");
+                        GetTabs(ref line);
+                        line.Append("<inheritance_parent>");
+                        line.Append(superclass.Name);
+                        line.Append("</inheritance_parent>");
                     }
 
                 if (((ProgramClass)programType).SubClasses.Count > 0) // Inheritance, children
                     foreach (ProgramClassType subclass in ((ProgramClass)programType).SubClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<inheritance_child>" + subclass.Name + "</inheritance_child>");
+                        GetTabs(ref line);
+                        line.Append("<inheritance_child>");
+                        line.Append(subclass.Name);
+                        line.Append("</inheritance_child>");
                     }
 
                 if (((ProgramClass)programType).OwnedByClasses.Count > 0) // Aggregation, parents
                     foreach (ProgramClassType ownerclass in ((ProgramClass)programType).OwnedByClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<aggregation_parent>" + ownerclass.Name + "</aggregation_parent>");
+                        GetTabs(ref line);
+                        line.Append("<aggregation_parent>");
+                        line.Append(ownerclass.Name);
+                        line.Append("</aggregation_parent>");
                     }
 
                 if (((ProgramClass)programType).OwnedClasses.Count > 0) // Aggregation, children
                     foreach (ProgramClassType ownedclass in ((ProgramClass)programType).OwnedClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<aggregation_child>" + ownedclass.Name + "</aggregation_child>");
+                        GetTabs(ref line);
+                        line.Append("<aggregation_child>");
+                        line.Append(ownedclass.Name);
+                        line.Append("</aggregation_child>");
                     }
 
                 if (((ProgramClass)programType).UsedByClasses.Count > 0) // Using, parents
                     foreach (ProgramClassType userclass in ((ProgramClass)programType).UsedByClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<using_parent>" + userclass.Name + "</using_parent>");
+                        GetTabs(ref line);
+                        line.Append("<using_parent>");
+                        line.Append(userclass.Name);
+                        line.Append("</using_parent>");
                     }
 
                 if (((ProgramClass)programType).UsedClasses.Count > 0) // Using, children
                     foreach (ProgramClassType usedclass in ((ProgramClass)programType).UsedClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<using_child>" + usedclass.Name + "</using_child>");
+                        GetTabs(ref line);
+                        line.Append("<using_child>");
+                        line.Append(usedclass.Name);
+                        line.Append("</using_child>");
                     }
             }
             else if (programType.GetType() == typeof(ProgramInterface))
             {
-                Console.Write("<interface name = \"" + programType.Name + "\">");
+                line.Append("<interface name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
                 tabs++;
 
                 if (((ProgramInterface)programType).SuperClasses.Count > 0) // Inheritance, parents
                     foreach (ProgramClassType superclass in ((ProgramInterface)programType).SuperClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<inheritance_parent>" + superclass.Name + "</inheritance_parent>");
+                        GetTabs(ref line);
+                        line.Append("<inheritance_parent>");
+                        line.Append(superclass.Name);
+                        line.Append("</inheritance_parent>");
                     }
 
                 if (((ProgramInterface)programType).SubClasses.Count > 0) // Inheritance, children
                     foreach (ProgramClassType subclass in ((ProgramInterface)programType).SubClasses)
                     {
-                        PrintTabs();
-                        Console.Write("<inheritance_child>" + subclass.Name + "</inheritance_child>");
-                    }
-
-                if (((ProgramInterface)programType).UsedByClasses.Count > 0) // Using, parents
-                    foreach (ProgramClassType userclass in ((ProgramInterface)programType).UsedByClasses)
-                    {
-                        PrintTabs();
-                        Console.Write("<using_parent>" + userclass.Name + "</using_parent>");
+                        GetTabs(ref line);
+                        line.Append("<inheritance_child>");
+                        line.Append(subclass.Name);
+                        line.Append("</inheritance_child>");
                     }
             }
             else if (programType.GetType() == typeof(ProgramFunction))
             {
-                Console.Write("<function name = \"" + programType.Name + "\">");
+                line.Append("<function name = \"");
+                line.Append(programType.Name);
+                line.Append("\">");
                 tabs++;
-                PrintTabs();
-                Console.Write("<size>" + ((ProgramFunction)programType).Size + "</size>");
-
-                PrintTabs();
-                Console.Write("<complexity>" + ((ProgramFunction)programType).Complexity + "</complexity>");
             }
 
-            /* ---------- Repeat with child data ---------- */
+            /* ---------- Repeat recursively with child data ---------- */
             if (programType.ChildList.Count > 0)
                 foreach (ProgramType child in programType.ChildList)
-                    PrintAllOutputXML(child);
+                    WriteRelationshipsXML(child);
 
             /* ---------- Close the element ---------- */
             tabs--;
-            PrintTabs();
+            if (programType.ChildList.Count > 0)
+                GetTabs(ref line);
             if (programType.GetType() == typeof(ProgramFile))
-                Console.Write("</file>");
+                line.Append("</file>");
             else if (programType.GetType() == typeof(ProgramNamespace))
-                Console.Write("</namespace>");
+                line.Append("</namespace>");
             else if (programType.GetType() == typeof(ProgramClass))
-                Console.Write("</class>");
+                line.Append("</class>");
             else if (programType.GetType() == typeof(ProgramInterface))
-                Console.Write("</interface>");
+                line.Append("</interface>");
             else if (programType.GetType() == typeof(ProgramFunction))
-                Console.Write("</function>");
+                line.Append("</function>");
+        }
+
+        private bool WriteFile(string filePath)
+        {
+            try
+            {
+                File.WriteAllLines(filePath, Lines.ToArray());
+            }
+            catch
+            {
+                Console.WriteLine("\nError: Unable to write to a new XML file.\n");
+                return false;
+            }
+            return true;
         }
 
         private void PrintTabs()
         {
             Console.Write("\n");
+
             for (int i = 0; i < tabs; i++)
                 Console.Write("    ");
+        }
+
+        private void GetTabs(ref StringBuilder line)
+        {
+            if (line.Length > 0)
+            {
+                Lines.Add(line.ToString());
+                line.Clear();
+            }
+
+            for (int i = 0; i < tabs; i++)
+                line.Append("    ");
         }
     }
 }

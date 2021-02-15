@@ -5,7 +5,7 @@
 ///  Language:      C#                                                                ///
 ///  Platform:      Dell G5 5090, Windows 10                                          ///
 ///  Application:   CodeAnalyzer - Project #2 for                                     ///
-///                 CSE681: Software Modeling and Analysis                            ///
+///                 CSE 681: Software Modeling and Analysis                           ///
 ///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
 ///                                                                                   ///
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -67,8 +67,11 @@ namespace CodeAnalyzer
                 return;
             }
 
-            // set the session data - /S, /R, /X options and directory path
+            // set the session data - /S, /R, /X options, plus directory path and filetype
             this.inputSessionData.SetInputSessionData(inputReader.FormattedInput);
+
+            // set the name of the directory
+            //this.codeAnalysisData.DirectoryName = this.inputSessionData.DirectoryPath.Substring()
 
             // create and read all the files, and enqueue them on the FileQueue
             this.inputSessionData.EnqueueFiles();
@@ -100,8 +103,7 @@ namespace CodeAnalyzer
 
             /* -------------------- Printing the Output Data -------------------- */
             OutputWriter outputWriter = new OutputWriter();
-            outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
-
+            outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.DirectoryPath, /*this.codeAnalysisData.DirectoryName,*/ this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
         }
 
     }

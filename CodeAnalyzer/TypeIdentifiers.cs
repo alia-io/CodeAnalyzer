@@ -5,7 +5,7 @@
 ///  Language:      C#                                                                ///
 ///  Platform:      Dell G5 5090, Windows 10                                          ///
 ///  Application:   CodeAnalyzer - Project #2 for                                     ///
-///                 CSE681: Software Modeling and Analysis                            ///
+///                 CSE 681: Software Modeling and Analysis                           ///
 ///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
 ///                                                                                   ///
 /////////////////////////////////////////////////////////////////////////////////////////

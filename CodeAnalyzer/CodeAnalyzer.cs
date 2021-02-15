@@ -5,7 +5,7 @@
 ///  Language:      C#                                                                ///
 ///  Platform:      Dell G5 5090, Windows 10                                          ///
 ///  Application:   CodeAnalyzer - Project #2 for                                     ///
-///                 CSE681: Software Modeling and Analysis                            ///
+///                 CSE 681: Software Modeling and Analysis                           ///
 ///  Author:        Alifa Stith, Syracuse University, astith@syr.edu                  ///
 ///                                                                                   ///
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -21,8 +21,8 @@ namespace CodeAnalyzer
     /* Pre-processor of file text into a list of strings */
     class FileProcessor
     {
-        ProgramFile programFile;
-        StringBuilder stringBuilder = new StringBuilder();
+        private ProgramFile programFile;
+        private StringBuilder stringBuilder = new StringBuilder();
 
         public FileProcessor(ProgramFile programFile) => this.programFile = programFile;
 
@@ -1327,7 +1327,8 @@ namespace CodeAnalyzer
 
              /* (1) Get the aggregation data from the class text and text of all children
               * (2) Get the using data from the parameters fields of all child functions */
-            this.SetAggregationAndUsingRelationships(this.programClassType);
+             foreach (ProgramDataType child in this.programClassType.ChildList)
+                this.SetAggregationAndUsingRelationships(child);
         }
 
         /* Populates superclass and subclass lists related to this class/interface */
@@ -1385,11 +1386,11 @@ namespace CodeAnalyzer
             this.SetUsingRelationships(programDataType);
 
             // Repeat recursively for each child class and function
-            foreach (ProgramType programType in programDataType.ChildList)
+            foreach (ProgramDataType child in programDataType.ChildList)
             {
-                if (programType.GetType() == typeof(ProgramClass) || programType.GetType() == typeof(ProgramFunction))
+                if (child.GetType() == typeof(ProgramClass) || child.GetType() == typeof(ProgramFunction))
                 {
-                    this.SetAggregationAndUsingRelationships((ProgramDataType)programType);
+                    this.SetAggregationAndUsingRelationships(child);
                 }
             }
         }
