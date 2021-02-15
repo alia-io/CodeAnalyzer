@@ -11,10 +11,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {
@@ -70,9 +67,6 @@ namespace CodeAnalyzer
             // set the session data - /S, /R, /X options, plus directory path and filetype
             this.inputSessionData.SetInputSessionData(inputReader.FormattedInput);
 
-            // set the name of the directory
-            //this.codeAnalysisData.DirectoryName = this.inputSessionData.DirectoryPath.Substring()
-
             // create and read all the files, and enqueue them on the FileQueue
             this.inputSessionData.EnqueueFiles();
             numberOfFiles = this.inputSessionData.FileQueue.Count();
@@ -103,7 +97,7 @@ namespace CodeAnalyzer
 
             /* -------------------- Printing the Output Data -------------------- */
             OutputWriter outputWriter = new OutputWriter();
-            outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.DirectoryPath, /*this.codeAnalysisData.DirectoryName,*/ this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
+            outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.DirectoryPath, this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
         }
 
     }

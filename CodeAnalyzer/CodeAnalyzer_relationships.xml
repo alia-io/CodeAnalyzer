@@ -1,0 +1,279 @@
+<file name = "CentralData.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "CodeAnalysisData">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_child>ProgramFile</aggregation_child>
+            <aggregation_child>ProgramClassTypeCollection</aggregation_child>
+            <function name = "CodeAnalysisData"></function>
+        </class>
+        <class name = "InputSessionData">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_child>ProgramFile</aggregation_child>
+            <function name = "InputSessionData"></function>
+            <function name = "SetInputSessionData"></function>
+            <function name = "EnqueueFiles"></function>
+        </class>
+    </namespace>
+</file>
+<file name = "CodeAnalyzer.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "FileProcessor">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <function name = "ProcessFile"></function>
+            <function name = "AddEntryToFileTextData"></function>
+            <function name = "DetectDoubleCharacter"></function>
+        </class>
+        <class name = "CodeProcessor">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_child>ProgramFunction</aggregation_child>
+            <aggregation_child>ProgramNamespace</aggregation_child>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <aggregation_child>ProgramClass</aggregation_child>
+            <aggregation_child>ProgramInterface</aggregation_child>
+            <aggregation_child>ProgramDataType</aggregation_child>
+            <using_child>ProgramFile</using_child>
+            <using_child>ProgramClassTypeCollection</using_child>
+            <function name = "CodeProcessor"></function>
+            <function name = "ProcessFileCode"></function>
+            <function name = "ProcessProgramClassTypeData"></function>
+            <function name = "ProcessFunctionData"></function>
+            <function name = "NewNamespace"></function>
+            <function name = "NewProgramClassType"></function>
+            <function name = "NewClass"></function>
+            <function name = "NewInterface"></function>
+            <function name = "NewFunction"></function>
+            <function name = "CheckIfFunction"></function>
+            <function name = "CheckIfConstructor"></function>
+            <function name = "CheckIfDeconstructor"></function>
+            <function name = "TestFunctionRequirement"></function>
+            <function name = "TestConstructorRequirement"></function>
+            <function name = "TestDeconstructorRequirement"></function>
+            <function name = "FunctionStep0"></function>
+            <function name = "FunctionStep1"></function>
+            <function name = "FunctionStep2"></function>
+            <function name = "FunctionStep3"></function>
+            <function name = "FunctionStep4"></function>
+            <function name = "ConstructorStep0"></function>
+            <function name = "ConstructorStep1"></function>
+            <function name = "ConstructorStep2"></function>
+            <function name = "ConstructorStep3"></function>
+            <function name = "ConstructorStep4"></function>
+            <function name = "ConstructorStep5"></function>
+            <function name = "ConstructorStep6"></function>
+            <function name = "ConstructorStep7"></function>
+            <function name = "DeconstructorStep0"></function>
+            <function name = "DeconstructorStep1"></function>
+            <function name = "DeconstructorStep2"></function>
+            <function name = "DeconstructorStep3"></function>
+            <function name = "DeconstructorStep4"></function>
+            <function name = "CheckControlFlowScopes"></function>
+            <function name = "CheckIfScope"></function>
+            <function name = "CheckElseIfScope"></function>
+            <function name = "CheckElseScope"></function>
+            <function name = "CheckForScope"></function>
+            <function name = "CheckForEachScope"></function>
+            <function name = "CheckWhileScope"></function>
+            <function name = "CheckDoWhileScope"></function>
+            <function name = "CheckSwitchScope"></function>
+            <function name = "EndBracketedScope"></function>
+            <function name = "EndBracketlessScope"></function>
+            <function name = "UpdateTextData"></function>
+            <function name = "IncrementFunctionSize"></function>
+            <function name = "IgnoreEntry"></function>
+            <function name = "RemoveFunctionSignatureFromTextData"></function>
+            <function name = "UpdateStringBuilder"></function>
+        </class>
+        <class name = "RelationshipProcessor">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_child>ProgramClass</aggregation_child>
+            <aggregation_child>ProgramDataType</aggregation_child>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <aggregation_child>ProgramFunction</aggregation_child>
+            <using_child>ProgramClassType</using_child>
+            <using_child>ProgramClassTypeCollection</using_child>
+            <using_child>ProgramDataType</using_child>
+            <function name = "RelationshipProcessor"></function>
+            <function name = "ProcessRelationships"></function>
+            <function name = "SetInheritanceRelationships"></function>
+            <function name = "SetAggregationAndUsingRelationships"></function>
+            <function name = "SetAggregationRelationships"></function>
+            <function name = "SetUsingRelationships"></function>
+        </class>
+    </namespace>
+</file>
+<file name = "InputOutput.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "InputReader">
+            <inheritance_child>Test</inheritance_child>
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <function name = "InputReader"></function>
+            <function name = "FormatInput"></function>
+            <function name = "SetInputField"></function>
+            <function name = "TestDirectoryPath"></function>
+        </class>
+        <class name = "OutputWriter">
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_child>ProgramFile</aggregation_child>
+            <aggregation_child>ProgramNamespace</aggregation_child>
+            <aggregation_child>ProgramClass</aggregation_child>
+            <aggregation_child>ProgramInterface</aggregation_child>
+            <aggregation_child>ProgramFunction</aggregation_child>
+            <aggregation_child>ProgramType</aggregation_child>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <using_child>ProgramFile</using_child>
+            <using_child>ProgramType</using_child>
+            <function name = "WriteOutput"></function>
+            <function name = "PrintFunctions"></function>
+            <function name = "PrintRelationships"></function>
+            <function name = "NewFilePath"></function>
+            <function name = "WriteFunctionsXML"></function>
+            <function name = "WriteRelationshipsXML"></function>
+            <function name = "WriteFile"></function>
+            <function name = "PrintTabs"></function>
+            <function name = "GetTabs"></function>
+        </class>
+        <class name = "Test">
+            <inheritance_parent>InputReader</inheritance_parent>
+        </class>
+    </namespace>
+</file>
+<file name = "MainControl.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "Launcher">
+            <aggregation_child>ProgramExecutor</aggregation_child>
+            <function name = "Main"></function>
+        </class>
+        <class name = "ProgramExecutor">
+            <aggregation_parent>Launcher</aggregation_parent>
+            <aggregation_child>InputSessionData</aggregation_child>
+            <aggregation_child>CodeAnalysisData</aggregation_child>
+            <aggregation_child>InputReader</aggregation_child>
+            <aggregation_child>ProgramFile</aggregation_child>
+            <aggregation_child>FileProcessor</aggregation_child>
+            <aggregation_child>CodeProcessor</aggregation_child>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <aggregation_child>RelationshipProcessor</aggregation_child>
+            <aggregation_child>OutputWriter</aggregation_child>
+            <function name = "ProgramExecutor"></function>
+            <function name = "ExecuteProgram"></function>
+        </class>
+    </namespace>
+</file>
+<file name = "Tests.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "CodeAnalyzerTests">
+            <aggregation_child>FileProcessorTests</aggregation_child>
+            <aggregation_child>CodeProcessorTests</aggregation_child>
+            <aggregation_child>ProgramClass</aggregation_child>
+            <aggregation_child>ProgramInterface</aggregation_child>
+            <using_child>ProgramFile</using_child>
+            <using_child>ProgramClassType</using_child>
+            <class name = "FileProcessorTests">
+                <aggregation_parent>CodeAnalyzerTests</aggregation_parent>
+                <using_child>ProgramFile</using_child>
+                <function name = "PrintFileTextData"></function>
+            </class>
+            <class name = "CodeProcessorTests">
+                <aggregation_parent>CodeAnalyzerTests</aggregation_parent>
+                <aggregation_child>ProgramClass</aggregation_child>
+                <aggregation_child>ProgramInterface</aggregation_child>
+                <using_child>ProgramClassType</using_child>
+                <function name = "PrintSubtypeTextData"></function>
+            </class>
+        </class>
+    </namespace>
+</file>
+<file name = "TypeIdentifiers.cs">
+    <namespace name = "CodeAnalyzer">
+        <class name = "ProgramType">
+            <inheritance_child>ProgramDataType</inheritance_child>
+            <inheritance_child>ProgramFile</inheritance_child>
+            <inheritance_child>ProgramNamespace</inheritance_child>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <using_parent>OutputWriter</using_parent>
+            <function name = "ProgramType"></function>
+        </class>
+        <class name = "ProgramDataType">
+            <inheritance_parent>ProgramType</inheritance_parent>
+            <inheritance_child>ProgramClassType</inheritance_child>
+            <inheritance_child>ProgramFunction</inheritance_child>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>RelationshipProcessor</aggregation_parent>
+            <using_parent>RelationshipProcessor</using_parent>
+            <function name = "ProgramDataType"></function>
+        </class>
+        <class name = "ProgramClassType">
+            <inheritance_parent>ProgramDataType</inheritance_parent>
+            <inheritance_child>ProgramClass</inheritance_child>
+            <inheritance_child>ProgramInterface</inheritance_child>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>RelationshipProcessor</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <aggregation_parent>ProgramClass</aggregation_parent>
+            <aggregation_parent>ProgramClassTypeCollection</aggregation_parent>
+            <using_parent>RelationshipProcessor</using_parent>
+            <using_parent>CodeAnalyzerTests</using_parent>
+            <using_parent>CodeProcessorTests</using_parent>
+            <using_parent>ProgramClassTypeCollection</using_parent>
+            <function name = "ProgramClassType"></function>
+        </class>
+        <class name = "ProgramFile">
+            <inheritance_parent>ProgramType</inheritance_parent>
+            <aggregation_parent>CodeAnalysisData</aggregation_parent>
+            <aggregation_parent>InputSessionData</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <aggregation_parent>ProgramExecutor</aggregation_parent>
+            <using_parent>CodeProcessor</using_parent>
+            <using_parent>OutputWriter</using_parent>
+            <using_parent>CodeAnalyzerTests</using_parent>
+            <using_parent>FileProcessorTests</using_parent>
+            <function name = "ProgramFile"></function>
+        </class>
+        <class name = "ProgramNamespace">
+            <inheritance_parent>ProgramType</inheritance_parent>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <function name = "ProgramNamespace"></function>
+        </class>
+        <class name = "ProgramClass">
+            <inheritance_parent>ProgramClassType</inheritance_parent>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>RelationshipProcessor</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <aggregation_parent>CodeAnalyzerTests</aggregation_parent>
+            <aggregation_parent>CodeProcessorTests</aggregation_parent>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <function name = "ProgramClass"></function>
+            <function name = "Equals"></function>
+            <function name = "GetHashCode"></function>
+        </class>
+        <class name = "ProgramInterface">
+            <inheritance_parent>ProgramClassType</inheritance_parent>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <aggregation_parent>CodeAnalyzerTests</aggregation_parent>
+            <aggregation_parent>CodeProcessorTests</aggregation_parent>
+            <function name = "ProgramInterface"></function>
+            <function name = "Equals"></function>
+            <function name = "GetHashCode"></function>
+        </class>
+        <class name = "ProgramFunction">
+            <inheritance_parent>ProgramDataType</inheritance_parent>
+            <aggregation_parent>CodeProcessor</aggregation_parent>
+            <aggregation_parent>RelationshipProcessor</aggregation_parent>
+            <aggregation_parent>OutputWriter</aggregation_parent>
+            <function name = "ProgramFunction"></function>
+        </class>
+        <class name = "ProgramClassTypeCollection">
+            <aggregation_parent>CodeAnalysisData</aggregation_parent>
+            <aggregation_child>ProgramClassType</aggregation_child>
+            <using_parent>CodeProcessor</using_parent>
+            <using_parent>RelationshipProcessor</using_parent>
+            <using_child>ProgramClassType</using_child>
+            <function name = "InsertItem"></function>
+            <function name = "SetItem"></function>
+            <function name = "RemoveItem"></function>
+            <function name = "ClearItems"></function>
+        </class>
+    </namespace>

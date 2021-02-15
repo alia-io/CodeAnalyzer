@@ -10,9 +10,7 @@
 ///                                                                                   ///
 /////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 namespace CodeAnalyzer
@@ -22,25 +20,6 @@ namespace CodeAnalyzer
     {
         public List<ProgramFile> ProcessedFiles { get; } // List of file objects with all subtypes
         public ProgramClassTypeCollection ProgramClassTypes { get; } // Collection of all classes and interfaces in all files
-        /*public string DirectoryName // Name of the directory being searched
-        {
-            get => DirectoryName;
-            set
-            {
-                //Console.WriteLine(new DirectoryInfo(value).Name.Trim());
-                DirectoryName = new DirectoryInfo(value).Name.Trim();
-               /* StringBuilder directoryName = new StringBuilder("");
-                string tempDirectoryName = new DirectoryInfo(value).Name.ToLower().Trim();
-
-                foreach (char letter in tempDirectoryName)
-                {
-                    if (char.IsWhiteSpace(letter) && !directoryName.ToString().EndsWith("_"))
-                        directoryName.Append(letter);
-                }
-
-                DirectoryName = directoryName.ToString(); */
-            //}
-        //}
 
         public CodeAnalysisData()
         {
