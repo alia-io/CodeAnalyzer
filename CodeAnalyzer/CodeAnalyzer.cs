@@ -210,11 +210,21 @@ namespace CodeAnalyzer
                 if (entry.Equals("{"))
                     if (this.CheckIfFunction()) // Check if a new function is being started
                     {
+                        scopeStack.Push(entry);
                         index = this.ProcessFunctionData(++index);
                         continue;
                     }
                     else // Push scope opener onto scopeStack
                         scopeStack.Push(entry);
+
+                if (entry.Equals("=>"))
+                {
+                    if (this.CheckIfFunction()) // Check if a new lambda function is being started
+                    {
+                        index = this.ProcessFunctionData(++index);
+                        continue;
+                    }
+                }
 
                 this.UpdateStringBuilder(entry);
             }
@@ -223,7 +233,7 @@ namespace CodeAnalyzer
         }
 
         /* Processes data within a Function scope */
-        private int ProcessFunctionData(int i) // TODO: don't increment size by counting new lines if TextData is empty
+        private int ProcessFunctionData(int i)
         {
             string entry;
             int index;
@@ -241,32 +251,14 @@ namespace CodeAnalyzer
 
                 if (entry.Equals(" ")) this.IncrementFunctionSize(); // Check for a new line and update function data
 
-                // Check for closing parenthesis
-                if (entry.Equals(")") && scopeStack.Count > 0 && scopeStack.Peek().Equals("(")) scopeStack.Pop();
-
-                if (entry.Equals("}")) // Check for the end of an existing bracketed scope
-                {
-                    if (this.EndBracketedScope("function"))
-                        return index;
-                    continue;
-                }
+                if (this.CheckScopeClosersWithinFunction(entry, ref index)) // Check for some closing scopes: ")", "}", ";"
+                    return index; // Closing scope was the end of this function
 
                 // Check control flow scope openers
                 if (!entry.Equals(" ") && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction) && this.CheckControlFlowScopes(entry))
                     scopeOpener = true;
 
-                if (entry.Equals("(")) scopeStack.Push(entry); // Check for open parenthesis
-
-                if (entry.Equals("{"))
-                    if (!scopeOpener && this.CheckIfFunction()) // Check if a new function is being started
-                    {
-                        index = this.ProcessFunctionData(++index);
-                        continue;
-                    }
-                    else // Push scope opener onto scopeStack
-                        scopeStack.Push(entry);
-
-                if (entry.Equals(";")) this.EndBracketlessScope(); // Check for the end of an existing bracketless scope
+                this.CheckScopeOpenersWithinFunction(entry, scopeOpener, ref index); // Check for some opening scopes: "(", "{", "=>"
 
                 this.UpdateStringBuilder(entry);
             }
@@ -369,6 +361,7 @@ namespace CodeAnalyzer
             return programInterface;
         }
 
+        /* Creates a new function object and adds it as a child to the current type */
         private void NewFunction(string[] functionIdentifier, string name, string modifiers, string returnType, List<string> parameters, string baseParameters)
         {
             this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
@@ -382,7 +375,6 @@ namespace CodeAnalyzer
 
             // Add the function and scope to scopeStack
             scopeStack.Push("function");
-            scopeStack.Push("{");
 
             typeStack.Push(programFunction);
         }
@@ -1192,22 +1184,68 @@ namespace CodeAnalyzer
         private bool EndBracketlessScope()
         {
             bool isFunction = false;
-            if (forScope == 0 && scopeStack.Count > 0 && typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
+            if (forScope == 0)
             {
-                while (scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
+                while (scopeStack.Count > 0 && scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
                     || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while")
                     || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch") || scopeStack.Peek().Equals("function"))
                 {
-                    scopeStack.Pop();
                     if (scopeStack.Peek().Equals("function"))
                     {
-                        if (typeStack.Count > 0) typeStack.Pop();
+                        if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction))
+                        {
+                            if (((ProgramFunction)typeStack.Peek()).Size == 0)
+                                ((ProgramFunction)typeStack.Peek()).Size++; // Functions are at least one line
+                            typeStack.Pop();
+                        }
                         isFunction = true;
                     }
+                    scopeStack.Pop();
                 }
             }
             stringBuilder.Clear();
             return isFunction;
+        }
+
+        /* Maintains the stack when there is a scope closer; returns true if a function is ending */
+        private bool CheckScopeClosersWithinFunction(string entry, ref int index)
+        {
+            // Check for closing parenthesis
+            if (entry.Equals(")") && scopeStack.Count > 0 && scopeStack.Peek().Equals("(")) scopeStack.Pop();
+
+            if (entry.Equals("}")) // Check for the end of an existing bracketed scope
+            {
+                if (this.EndBracketedScope("function"))
+                    return true;
+            }
+
+            if (entry.Equals(";")) // Check for the end of an existing bracketless scope
+                if (this.EndBracketlessScope()) // True if bracketless scope was a function
+                {
+                    index++;
+                    return true;
+                }
+
+            return false;
+        }
+
+        /* Maintains the stack when there is a scope opener */
+        private void CheckScopeOpenersWithinFunction(string entry, bool scopeOpener, ref int index)
+        {
+            if (entry.Equals("(")) scopeStack.Push(entry); // Check for open parenthesis
+
+            if (entry.Equals("{"))
+                if (!scopeOpener && this.CheckIfFunction()) // Check if a new function is being started
+                {
+                    scopeStack.Push(entry);
+                    index = this.ProcessFunctionData(++index);
+                }
+                else // Push scope opener onto scopeStack
+                    scopeStack.Push(entry);
+
+            if (entry.Equals("=>"))
+                if (this.CheckIfFunction()) // Check if a new lambda function is being started
+                    index = this.ProcessFunctionData(++index);
         }
 
         /* Add entry to current ProgramDataType's text list for classes, interfaces, and functions */

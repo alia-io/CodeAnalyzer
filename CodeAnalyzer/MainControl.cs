@@ -21,7 +21,7 @@
  *      - Run application using preset commands using run.bat
  *      
  *      - Run analyze your own code:
- *          .\bin\Debug\CodeAnalyzer.exe [directory path] [file type] [optional args]
+ *          .\bin\Release\CodeAnalyzer.exe [directory path] [file type] [optional args]
  *      
  *          - Arguments can be given in any order
  *          - Directory path must not contain any whitespace, unless it is enclosed in "quotation marks"
