@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="InputOutputTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CentralDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

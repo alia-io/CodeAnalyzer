@@ -40,7 +40,7 @@ namespace CodeAnalyzerTests
         public void TestInputReader_FormatInput_3()
         {
             string[] input = { "*.cs", "C:" };
-            string[] expectedFormattedInput = { "", "", "", Path.GetFullPath("C:"), "*.cs" };
+            string[] expectedFormattedInput = { "", "", "", "C:\\", "*.cs" };
             string[] actualFormattedInput;
 
             InputReader inputReader = new InputReader();
@@ -49,11 +49,5 @@ namespace CodeAnalyzerTests
 
             CollectionAssert.AreEquivalent(expectedFormattedInput, actualFormattedInput);
         }
-    }
-
-    [TestClass]
-    public class OutputWriterTests
-    {
-
     }
 }
