@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeAnalyzer;
-using System;
 using System.IO;
 
 namespace CodeAnalyzerTests

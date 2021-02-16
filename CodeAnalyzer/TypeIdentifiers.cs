@@ -62,13 +62,14 @@ namespace CodeAnalyzer
             }
         }
 
-        public override bool Equals(object obj) // Defines equality based on name
+        public override bool Equals(object obj) // Defines equality based on name and type
         {
             if (this.GetType() != obj.GetType()) return false;
             return (base.Name).Equals(((ProgramType)obj).Name);
         }
 
-        public override int GetHashCode() { return this.Name.GetHashCode(); } // HashCode based on name
+        public override int GetHashCode() =>
+            this.Name.GetHashCode() + this.GetType().GetHashCode(); // HashCode based on name and type
     }
 
     /* Defines unique data contained in an object representing a file */
