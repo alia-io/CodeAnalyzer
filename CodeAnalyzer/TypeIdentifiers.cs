@@ -31,10 +31,12 @@ namespace CodeAnalyzer
     public abstract class ProgramDataType : ProgramType
     {
         public List<string> TextData { get; set; }
-        public string Modifiers { get; }
-        public ProgramDataType(string name, string modifiers) : base(name)
+        public List<string> Modifiers { get; }
+        public List<string> Generics { get; }
+        public ProgramDataType(string name, List<string> modifiers, List<string> generics) : base(name)
         {
             this.Modifiers = modifiers;
+            this.Generics = generics;
             this.TextData = new List<string>();
         }
     }
@@ -43,11 +45,13 @@ namespace CodeAnalyzer
     public abstract class ProgramClassType : ProgramDataType
     {
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
+        private ProgramType parent;
         public List<ProgramClassType> SubClasses { get; }       // Inheritance (child data): ProgramType(s) that this type is inherited by
         public List<ProgramClassType> SuperClasses { get; }     // Inheritance (parent data): ProgramType(s) that this type inherits from
 
-        public ProgramClassType(string name, string modifiers) : base(name, modifiers) 
-        { 
+        public ProgramClassType(string name, List<string> modifiers, List<string> generics, ProgramType parent) : base(name, modifiers, generics) 
+        {
+            this.parent = parent;
             this.SubClasses = new List<ProgramClassType>();
             this.SuperClasses = new List<ProgramClassType>();
         }
@@ -65,7 +69,7 @@ namespace CodeAnalyzer
         public override bool Equals(object obj) // Defines equality based on name and type
         {
             if (this.GetType() != obj.GetType()) return false;
-            return (base.Name).Equals(((ProgramType)obj).Name);
+            return base.Name.Equals(((ProgramClassType)obj).Name);
         }
 
         public override int GetHashCode() =>
@@ -96,7 +100,8 @@ namespace CodeAnalyzer
         public List<ProgramClassType> OwnedByClasses { get; }   // Composition/Aggregation (parent data): ProgramClass(es) that this class is owned by ("part of")
         public List<ProgramClassType> UsedClasses { get; }      // Using (child data): ProgramClass(es) that this class uses
         public List<ProgramClassType> UsedByClasses { get; }    // Using (parent data): ProgramClass(es) that this class is used by
-        public ProgramClass(string name, string modifiers) : base(name, modifiers) 
+        public ProgramClass(string name, List<string> modifiers, List<string> generics, ProgramType parent) 
+            : base(name, modifiers, generics, parent)
         {
             this.OwnedClasses = new List<ProgramClassType>();
             this.OwnedByClasses = new List<ProgramClassType>();
@@ -106,19 +111,21 @@ namespace CodeAnalyzer
     }
 
     /* Defines unique data contained in an object representing an interface */
-    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, string modifiers) : base(name, modifiers) { } }
+    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, List<string> modifiers, List<string> generics, ProgramType parent) 
+            : base(name, modifiers, generics, parent) { } }
 
     /* Defines unique data contained in an object representing a function */
     public class ProgramFunction : ProgramDataType
     {
-        public string ReturnType { get; }
-        public List<string> Parameters { get; set; }
-        public string BaseParameters { get; }
+        public List<string> ReturnTypes { get; }
+        public List<string> Parameters { get; }
+        public List<string> BaseParameters { get; }
         public int Size { get; set; }
         public int Complexity { get; set; }
-        public ProgramFunction(string name, string modifiers, string returnType, List<string> parameters, string baseParameters) : base(name, modifiers)
+        public ProgramFunction(string name, List<string> modifiers, List<string> returnTypes, List<string> generics, List<string> parameters, List<string> baseParameters) 
+            : base(name, modifiers, generics)
         {
-            this.ReturnType = returnType;
+            this.ReturnTypes = returnTypes;
             this.Parameters = parameters;
             this.BaseParameters = baseParameters;
             this.Size = 0;

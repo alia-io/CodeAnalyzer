@@ -16,7 +16,7 @@ namespace CodeAnalyzerTests
     public class ProgramClassTypeTests
     {
         [TestMethod]
-        public void TestClassType_1()
+        public void TestProgramClassType_1()
         {
             string name = "TestClass";
             string modifiers1 = "modifiers for class 1";
@@ -33,7 +33,7 @@ namespace CodeAnalyzerTests
         }
 
         [TestMethod]
-        public void TestClassType_2()
+        public void TestProgramClassType_2()
         {
             string name = "TestInterface";
             string modifiers1 = "modifiers for class 1";
@@ -50,7 +50,7 @@ namespace CodeAnalyzerTests
         }
 
         [TestMethod]
-        public void TestClassType_3()
+        public void TestProgramClassType_3()
         {
             string name = "TestName";
             string modifiers = "private";
