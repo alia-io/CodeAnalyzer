@@ -45,13 +45,11 @@ namespace CodeAnalyzer
     public abstract class ProgramClassType : ProgramDataType
     {
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
-        private ProgramType parent;
         public List<ProgramClassType> SubClasses { get; }       // Inheritance (child data): ProgramType(s) that this type is inherited by
         public List<ProgramClassType> SuperClasses { get; }     // Inheritance (parent data): ProgramType(s) that this type inherits from
 
-        public ProgramClassType(string name, List<string> modifiers, List<string> generics, ProgramType parent) : base(name, modifiers, generics) 
+        public ProgramClassType(string name, List<string> modifiers, List<string> generics) : base(name, modifiers, generics) 
         {
-            this.parent = parent;
             this.SubClasses = new List<ProgramClassType>();
             this.SuperClasses = new List<ProgramClassType>();
         }
@@ -68,12 +66,11 @@ namespace CodeAnalyzer
 
         public override bool Equals(object obj) // Defines equality based on name and type
         {
-            if (this.GetType() != obj.GetType()) return false;
-            return base.Name.Equals(((ProgramClassType)obj).Name);
+            return base.Name.Equals(((ProgramClassType)obj).Name) && this.GetType() == obj.GetType();
         }
 
-        public override int GetHashCode() =>
-            this.Name.GetHashCode() + this.GetType().GetHashCode(); // HashCode based on name and type
+        public override int GetHashCode() => // HashCode based on name and type
+            this.Name.GetHashCode() + this.GetType().GetHashCode();
     }
 
     /* Defines unique data contained in an object representing a file */
@@ -100,8 +97,8 @@ namespace CodeAnalyzer
         public List<ProgramClassType> OwnedByClasses { get; }   // Composition/Aggregation (parent data): ProgramClass(es) that this class is owned by ("part of")
         public List<ProgramClassType> UsedClasses { get; }      // Using (child data): ProgramClass(es) that this class uses
         public List<ProgramClassType> UsedByClasses { get; }    // Using (parent data): ProgramClass(es) that this class is used by
-        public ProgramClass(string name, List<string> modifiers, List<string> generics, ProgramType parent) 
-            : base(name, modifiers, generics, parent)
+        public ProgramClass(string name, List<string> modifiers, List<string> generics) 
+            : base(name, modifiers, generics)
         {
             this.OwnedClasses = new List<ProgramClassType>();
             this.OwnedByClasses = new List<ProgramClassType>();
@@ -111,8 +108,8 @@ namespace CodeAnalyzer
     }
 
     /* Defines unique data contained in an object representing an interface */
-    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, List<string> modifiers, List<string> generics, ProgramType parent) 
-            : base(name, modifiers, generics, parent) { } }
+    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, List<string> modifiers, List<string> generics) 
+            : base(name, modifiers, generics) { } }
 
     /* Defines unique data contained in an object representing a function */
     public class ProgramFunction : ProgramDataType

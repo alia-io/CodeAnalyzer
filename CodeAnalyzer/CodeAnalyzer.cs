@@ -302,15 +302,15 @@ namespace CodeAnalyzer
             ProgramClassType programClassType;
 
             // Gather the ProgramClassType data
-            (int newIndex, ProgramType parent, string name, List<string> textData, List<string> modifiers, List<string> generics) = this.GetClassTypeData(type, index);
+            (int newIndex, string name, List<string> textData, List<string> modifiers, List<string> generics) = this.GetClassTypeData(type, index);
 
             // Create the new class or interface object
-            if (type.Equals("class")) programClassType = this.NewClass(name, modifiers, generics, parent);
-            else programClassType = this.NewInterface(name, modifiers, generics, parent);
+            if (type.Equals("class")) programClassType = this.NewClass(name, modifiers, generics);
+            else programClassType = this.NewInterface(name, modifiers, generics);
 
-            if (programClassTypes.Contains(name) && programClassTypes[name].GetType() == programClassType.GetType())
+            if (programClassTypes.Contains(name))
             {
-                Console.WriteLine("\n\nError: Cannot have two identical types with the same parent.\n\n");
+                Console.WriteLine("\n\nError: Cannot determine data with two classes with the same name.\n\n");
                 Environment.Exit(1);
             }
 
@@ -328,17 +328,17 @@ namespace CodeAnalyzer
         }
 
         /* Creates a new class object and adds it as a child to the current type */
-        private ProgramClass NewClass(string name, List<string> modifiers, List<string> generics, ProgramType parent)
+        private ProgramClass NewClass(string name, List<string> modifiers, List<string> generics)
         {
-            ProgramClass programClass = new ProgramClass(name, modifiers, generics, parent);
+            ProgramClass programClass = new ProgramClass(name, modifiers, generics);
             stringBuilder.Clear();
             return programClass;
         }
 
         /* Creates a new interface object and adds it as a child to the current type */
-        private ProgramInterface NewInterface(string name, List<string> modifiers, List<string> generics, ProgramType parent)
+        private ProgramInterface NewInterface(string name, List<string> modifiers, List<string> generics)
         {
-            ProgramInterface programInterface = new ProgramInterface(name, modifiers, generics, parent);
+            ProgramInterface programInterface = new ProgramInterface(name, modifiers, generics);
             stringBuilder.Clear();
             return programInterface;
         }
@@ -362,9 +362,8 @@ namespace CodeAnalyzer
         }
 
         /* Finds all data required to create a new class or interface */
-        private (int index, ProgramType parent, string name, List<string> textData, List<string> modifiers, List<string> generics) GetClassTypeData(string type, int index)
+        private (int index, string name, List<string> textData, List<string> modifiers, List<string> generics) GetClassTypeData(string type, int index)
         {
-            ProgramType parent;
             string entry;
             string name = "";
             List<string> textData = new List<string>();
@@ -402,10 +401,7 @@ namespace CodeAnalyzer
                     if (!entry.Equals(" ")) name = entry;
             }
 
-            if (typeStack.Count > 0) parent = typeStack.Peek();
-            else parent = programFile;
-
-            return (++index, parent, name, textData, modifiers, generics);
+            return (++index, name, textData, modifiers, generics);
         }
 
         /* Detects the syntax for a normal function signature */
@@ -624,7 +620,7 @@ namespace CodeAnalyzer
             {
                 if (parentheses == 1 && text.Equals(")")) return 1;
                 if (!text.Equals("(")) returnTypes.Add(text);
-                return 0; // E, H
+                return 0;
             }
 
             if ((!Char.IsSymbol(text[0]) && !Char.IsPunctuation(text[0])) || text[0].Equals('_'))
@@ -734,7 +730,7 @@ namespace CodeAnalyzer
                 modifiers.Add(name);
                 returnTypes.Clear();
                 name = text;
-                returnTypes = parameters;
+                foreach (string entry in parameters) returnTypes.Add(entry);
                 parameters.Clear();
                 return 5;
             }
@@ -1454,6 +1450,52 @@ namespace CodeAnalyzer
                 stringBuilder.Append(entry);
             }
         }
+
+        /* This is a test method - used in unit testing, not in the application. It has the same functionality as CheckIfFunction. */
+        public (bool, ProgramFunction) CheckIfFunctionTest(string[] functionIdentifier)
+        {
+            // The function requirement to check next. If this ends at 4 or 7, there is a new function. If this ends at -1, there is not a new function.
+            int functionRequirement = 0;
+
+            string name = "";
+            List<string> modifiers = new List<string>();
+            List<string> returnTypes = new List<string>();
+            List<string> generics = new List<string>();
+            List<string> parameters = new List<string>();
+
+            // Ensure the same number of opening and closing parentheses/brackets
+            int parentheses = 0;
+            int squareBrackets = 0;
+            int angleBrackets = 0;
+
+            for (int i = 0; i < functionIdentifier.Length; i++)
+            {
+                string text = functionIdentifier[i];
+                if (text.Length < 1) continue;
+
+                if (text.Equals("(")) parentheses++;
+                else if (text.Equals("[")) squareBrackets++;
+                else if (text.Equals("<")) angleBrackets++;
+
+                // Test the current requirement
+                functionRequirement = this.TestFunctionRequirement(functionRequirement, text, ref name, ref modifiers, ref returnTypes, ref generics, ref parameters, squareBrackets, angleBrackets, parentheses/*, periods*/);
+
+                if (text.Equals(")")) parentheses--;
+                else if (text.Equals("]")) squareBrackets--;
+                else if (text.Equals(">")) angleBrackets--;
+            }
+
+            if (functionRequirement == 4 || functionRequirement == 7) // Function signature detected - create a new function
+            {
+                this.NewFunction(functionIdentifier, name, modifiers, returnTypes, generics, parameters, new List<string>());
+                return (true, (ProgramFunction)typeStack.Peek());
+            }
+            // If it failed normal function requirements, check rules for constructors and deconstructors
+            else if (this.CheckIfConstructor(functionIdentifier)) return (true, (ProgramFunction)typeStack.Peek());
+            else if (this.CheckIfDeconstructor(functionIdentifier)) return (true, (ProgramFunction)typeStack.Peek());
+
+            return (false, null);
+        }
     }
 
     /* Processor of all class and interface relationship data, filling all internal relationship lists */
@@ -1477,8 +1519,7 @@ namespace CodeAnalyzer
 
              /* (1) Get the aggregation data from the class text and text of all children
               * (2) Get the using data from the parameters fields of all child functions */
-             foreach (ProgramDataType child in this.programClassType.ChildList)
-                this.SetAggregationAndUsingRelationships(child);
+            this.SetAggregationAndUsingRelationships(programClassType);
         }
 
         /* Populates superclass and subclass lists related to this class/interface */
@@ -1518,6 +1559,7 @@ namespace CodeAnalyzer
                 if (hasSuperclasses) // Entry might be a superclass - search the class list
                     if (programClassType.Name != entry && programClassTypeCollection.Contains(entry))
                     {
+                        // Add to each other's lists
                         ProgramClassType super = programClassTypeCollection[entry];
                         super.SubClasses.Add(programClassType);
                         programClassType.SuperClasses.Add(super);
@@ -1551,7 +1593,7 @@ namespace CodeAnalyzer
             foreach (string entry in programDataType.TextData)
             {
                 // Check that "entry" is a different class/interface
-                if (programClassType.Name != entry && programClassTypeCollection.Contains(entry))
+                if (!programClassType.Name.Equals(entry) && programClassTypeCollection.Contains(entry))
                 {
                     ProgramClassType owned = programClassTypeCollection[entry];
 
@@ -1583,7 +1625,7 @@ namespace CodeAnalyzer
                         // Check that "used" is a class and is not already in this class's UsedClasses list
                         if (!((ProgramClass)programClassType).UsedClasses.Contains(used) && used.GetType() == typeof(ProgramClass))
                         {
-                            // Add each to the other's list
+                            // Add each to the other's lists
                             ((ProgramClass)used).UsedByClasses.Add(programClassType);
                             ((ProgramClass)programClassType).UsedClasses.Add(used);
                         }

@@ -1,11 +1,11 @@
-﻿// Inherited by: Dog, Human
+﻿// SubClasses: Dog, Human
 interface IAnimalActions
 {
     string Talk();
     (int, int) Move(int direction, int seconds);
 }
 
-// Inherited by: Human
+// SubClasses: Human
 interface IHumanActions
 {
     bool GoToSchool(int price);
@@ -17,7 +17,7 @@ interface IHumanActions
     bool FillCarFuelTank();
 }
 
-// Inherited by: Pet, Human
+// SubClasses: Pet, Human
 abstract class Animal
 {
     public int LocationX { get; internal set; }
@@ -46,10 +46,10 @@ abstract class Animal
     }
 }
 
-// Inherits: Animal
-// Inherited by: Dog
-// Aggregated by: Human
-// Used by: Human
+// SuperClasses: Animal
+// SubClasses: Dog
+// OwnedByClasses: Human
+// UsedByClasses: Human
 abstract class Pet : Animal
 {
     public int Cost { get; }
@@ -59,8 +59,8 @@ abstract class Pet : Animal
     }
 }
 
-// Inherits: Pet, IAnimalActions
-// Aggregated by: Human
+// SuperClasses: Pet, IAnimalActions
+// OwnedByClasses: Human
 class Dog : Pet, IAnimalActions
 {
     public string Breed { get; }
@@ -73,9 +73,9 @@ class Dog : Pet, IAnimalActions
     public string Talk() => "Woof!";
 }
 
-// Inherits: Animal, IAnimalActions, IHumanActions
-// Aggregates: Car, Pet, Dog
-// Uses: Pet
+// SuperClasses: Animal, IAnimalActions, IHumanActions
+// OwnedClasses: Car, Pet, Dog
+// UsedClasses: Pet
 class Human : Animal, IAnimalActions, IHumanActions
 {
     public int Money { get; internal set; }
@@ -97,14 +97,16 @@ class Human : Animal, IAnimalActions, IHumanActions
 
     public override (int, int) Move(int direction, int seconds)
     {
+        int speed = Speed;
+        if (IsDriving && car != null) speed = car.Speed;
         if (direction == 0) // move north
-            LocationY += seconds * Speed;
+            LocationY += seconds * speed;
         else if (direction == 1) // move east
-            LocationX += seconds * Speed;
+            LocationX += seconds * speed;
         else if (direction == 2) // move south
-            LocationY -= seconds * Speed;
+            LocationY -= seconds * speed;
         else if (direction == 3) // move west
-            LocationX -= seconds * Speed;
+            LocationX -= seconds * speed;
         return (LocationX, LocationY);
     }
 
@@ -188,7 +190,7 @@ class Human : Animal, IAnimalActions, IHumanActions
     }
 }
 
-// Aggregated by: Human
+// OwnedByClasses: Human
 class Car
 {
     private static int priceOfFuel = 5;
