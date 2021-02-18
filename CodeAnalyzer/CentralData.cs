@@ -62,7 +62,6 @@ namespace CodeAnalyzer
 
             if (input[4].Equals("*.cs") || input[4].Equals("*.txt"))
                 this.FileType = input[4];
-                
         }
 
         /* Reads all files, creates and enqueues the ProgramFile objects with their raw text data */

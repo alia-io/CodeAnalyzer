@@ -47,13 +47,6 @@ namespace CodeAnalyzer
         public ProgramClassTypeCollection ProgramClassCollection { get; internal set; }
         public List<ProgramClassType> SubClasses { get; }       // Inheritance (child data): ProgramType(s) that this type is inherited by
         public List<ProgramClassType> SuperClasses { get; }     // Inheritance (parent data): ProgramType(s) that this type inherits from
-
-        public ProgramClassType(string name, List<string> modifiers, List<string> generics) : base(name, modifiers, generics) 
-        {
-            this.SubClasses = new List<ProgramClassType>();
-            this.SuperClasses = new List<ProgramClassType>();
-        }
-
         public override string Name // Maintain the ProgramClassTypeCollection if a name changes
         {
             get { return base.Name; }
@@ -62,6 +55,12 @@ namespace CodeAnalyzer
                 if (ProgramClassCollection != null) ProgramClassCollection.NotifyNameChange(this, value);
                 base.Name = value;
             }
+        }
+
+        public ProgramClassType(string name, List<string> modifiers, List<string> generics) : base(name, modifiers, generics) 
+        {
+            this.SubClasses = new List<ProgramClassType>();
+            this.SuperClasses = new List<ProgramClassType>();
         }
 
         public override bool Equals(object obj) // Defines equality based on name and type
@@ -108,8 +107,11 @@ namespace CodeAnalyzer
     }
 
     /* Defines unique data contained in an object representing an interface */
-    public class ProgramInterface : ProgramClassType { public ProgramInterface(string name, List<string> modifiers, List<string> generics) 
-            : base(name, modifiers, generics) { } }
+    public class ProgramInterface : ProgramClassType
+    {
+        public ProgramInterface(string name, List<string> modifiers, List<string> generics) 
+            : base(name, modifiers, generics) { }
+    }
 
     /* Defines unique data contained in an object representing a function */
     public class ProgramFunction : ProgramDataType

@@ -328,8 +328,22 @@ namespace CodeAnalyzerTests
         [TestMethod]
         public void TestFunctionSignature_A()
         {
-            CodeProcessor codeProcessor = new CodeProcessor(new ProgramFile("path", "name", "text"), new ProgramClassTypeCollection());
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
 
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "public", "override", "sealed", 
+                "(", "int", ",", "int", ")", "Test", "(", ")", " ", "{", " ", "return", "(", "0", ",", "0", ")", 
+                ";", " ", "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "Test";
             List<string> empty = new List<string>();
             List<string> ModA = new List<string>();
             List<string> RetA = new List<string>();
@@ -337,21 +351,48 @@ namespace CodeAnalyzerTests
             ModA.Add("public"); ModA.Add("override"); ModA.Add("sealed");
             RetA.Add("int"); RetA.Add(","); RetA.Add("int");
 
-            (bool A, ProgramFunction FuncA) = codeProcessor.CheckIfFunctionTest(new string[] { "public", "override", "sealed", "(", "int", ",", "int", ")", "Test", "(", ")" });
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, ModA, RetA, empty, empty, empty);
 
-            Assert.AreEqual(true, A);
-            Assert.AreEqual("Test", FuncA.Name);
-            CollectionAssert.AreEqual(ModA, FuncA.Modifiers);
-            CollectionAssert.AreEqual(RetA, FuncA.ReturnTypes);
-            CollectionAssert.AreEqual(empty, FuncA.Generics);
-            CollectionAssert.AreEqual(empty, FuncA.Parameters);
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+            
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
         }
 
         [TestMethod]
         public void TestFunctionSignature_B()
         {
-            CodeProcessor codeProcessor = new CodeProcessor(new ProgramFile("path", "name", "text"), new ProgramClassTypeCollection());
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
 
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "void", "Test", "<", "V", 
+                ",", "W", ">", "(", "int", "x", ")", " ", "{", " ", "return", "(", "0", ",", "0", ")",
+                ";", " ", "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "Test";
             List<string> empty = new List<string>();
             List<string> RetB = new List<string>();
             List<string> GenB = new List<string>();
@@ -361,21 +402,48 @@ namespace CodeAnalyzerTests
             GenB.Add("V"); GenB.Add(","); GenB.Add("W");
             ParB.Add("int"); ParB.Add("x");
 
-            (bool B, ProgramFunction FuncB) = codeProcessor.CheckIfFunctionTest(new string[] { "void", "Test", "<", "V", ",", "W", ">", "(", "int", "x", ")" });
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, empty, RetB, GenB, ParB, empty);
 
-            Assert.AreEqual(true, B);
-            Assert.AreEqual("Test", FuncB.Name);
-            CollectionAssert.AreEqual(empty, FuncB.Modifiers);
-            CollectionAssert.AreEqual(RetB, FuncB.ReturnTypes);
-            CollectionAssert.AreEqual(GenB, FuncB.Generics);
-            CollectionAssert.AreEqual(ParB, FuncB.Parameters);
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
         }
 
         [TestMethod]
         public void TestFunctionSignature_E()
         {
-            CodeProcessor codeProcessor = new CodeProcessor(new ProgramFile("path", "name", "text"), new ProgramClassTypeCollection());
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
 
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "(", "int", ",", "int", ",", 
+                "int", ",", "int", ",", "int", ")", "Test", "<", "PType", ",", "X", ">", "(", ")", " ", "{", 
+                " ", "return", "(", "0", ",", "0", ")", ";", " ", "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "Test";
             List<string> empty = new List<string>();
             List<string> RetE = new List<string>();
             List<string> GenE = new List<string>();
@@ -383,21 +451,50 @@ namespace CodeAnalyzerTests
             RetE.Add("int"); RetE.Add(","); RetE.Add("int"); RetE.Add(","); RetE.Add("int"); RetE.Add(","); RetE.Add("int"); RetE.Add(","); RetE.Add("int");
             GenE.Add("PType"); GenE.Add(","); GenE.Add("X");
 
-            (bool E, ProgramFunction FuncE) = codeProcessor.CheckIfFunctionTest(new string[] { "(", "int", ",", "int", ",", "int", ",", "int", ",", "int", ")", "Test", "<", "PType", ",", "X", ">", "(", ")" });
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, empty, RetE, GenE, empty, empty);
 
-            Assert.AreEqual(true, E);
-            Assert.AreEqual("Test", FuncE.Name);
-            CollectionAssert.AreEqual(empty, FuncE.Modifiers);
-            CollectionAssert.AreEqual(RetE, FuncE.ReturnTypes);
-            CollectionAssert.AreEqual(GenE, FuncE.Generics);
-            CollectionAssert.AreEqual(empty, FuncE.Parameters);
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
         }
 
         [TestMethod]
         public void TestFunctionSignature_F()
         {
-            CodeProcessor codeProcessor = new CodeProcessor(new ProgramFile("path", "name", "text"), new ProgramClassTypeCollection());
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
 
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "public", "virtual", "(", 
+                "List", "<", "int", ">", ",", "bool", ",", "float", ")", "Test", "<", "Object", ">", "(", 
+                "double", "n", ",", "double", "m", ")", " ", "{", " ", "return", "(", "0", ",", "0", ")",
+                ";", " ", "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "Test";
+            List<string> empty = new List<string>();
             List<string> ModF = new List<string>();
             List<string> RetF = new List<string>();
             List<string> GenF = new List<string>();
@@ -408,21 +505,48 @@ namespace CodeAnalyzerTests
             GenF.Add("Object");
             ParF.Add("double"); ParF.Add("n"); ParF.Add(","); ParF.Add("double"); ParF.Add("m");
 
-            (bool F, ProgramFunction FuncF) = codeProcessor.CheckIfFunctionTest(new string[] { "public", "virtual", "(", "List", "<", "int", ">", ",", "bool", ",", "float", ")", "Test", "<", "Object", ">", "(", "double", "n", ",", "double", "m", ")" });
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, ModF, RetF, GenF, ParF, empty);
 
-            Assert.AreEqual(true, F);
-            Assert.AreEqual("Test", FuncF.Name);
-            CollectionAssert.AreEqual(ModF, FuncF.Modifiers);
-            CollectionAssert.AreEqual(RetF, FuncF.ReturnTypes);
-            CollectionAssert.AreEqual(GenF, FuncF.Generics);
-            CollectionAssert.AreEqual(ParF, FuncF.Parameters);
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
         }
 
         [TestMethod]
         public void TestFunctionSignature_K()
         {
-            CodeProcessor codeProcessor = new CodeProcessor(new ProgramFile("path", "name", "text"), new ProgramClassTypeCollection());
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
 
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "List", "<", "int", ">", 
+                "F", "(", "int", "a", ")", " ", "{", " ", "return", "(", "0", ",", "0", ")", ";", " ", 
+                "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "F";
             List<string> empty = new List<string>();
             List<string> RetK = new List<string>();
             List<string> ParK = new List<string>();
@@ -430,16 +554,79 @@ namespace CodeAnalyzerTests
             RetK.Add("List"); RetK.Add("<"); RetK.Add("int"); RetK.Add(">");
             ParK.Add("int"); ParK.Add("a");
 
-            (bool K, ProgramFunction FunK) = codeProcessor.CheckIfFunctionTest(new string[] { "List", "<", "int", ">", "F", "(", "int", "a", ")" });
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, empty, RetK, empty, ParK, empty);
 
-            Assert.AreEqual(true, K);
-            Assert.AreEqual("F", FunK.Name);
-            CollectionAssert.AreEqual(empty, FunK.Modifiers);
-            CollectionAssert.AreEqual(RetK, FunK.ReturnTypes);
-            CollectionAssert.AreEqual(empty, FunK.Generics);
-            CollectionAssert.AreEqual(ParK, FunK.Parameters);
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
         }
 
+        [TestMethod]
+        public void TestFunctionSignature_O()
+        {
+            ProgramFile programFile = new ProgramFile("path", "name", "text");
+            ProgramClassTypeCollection expectedClassTypeCollection = new ProgramClassTypeCollection();
+            ProgramClassTypeCollection actualClassTypeCollection = new ProgramClassTypeCollection();
+            CodeProcessor codeProcessor = new CodeProcessor(programFile, actualClassTypeCollection);
+            ProgramClass expectedProgramClass;
+            ProgramClass actualProgramClass;
+            ProgramFunction expectedProgramFunction;
+            ProgramFunction actualProgramFunction;
+
+            string[] fileTextDataArray = { "class", "ClassName", " ", "{", " ", "public", "static", 
+                "Test", ".", "NewType", "TestFunc", "(", ")", " ", "{", " ", "return", "(", "0", 
+                ",", "0", ")", ";", " ", "}", " ", "}" };
+
+            programFile.FileTextData.AddRange(fileTextDataArray);
+
+            string name = "TestFunc";
+            List<string> empty = new List<string>();
+            List<string> ModO = new List<string>();
+            List<string> RetO = new List<string>();
+
+            ModO.Add("public"); ModO.Add("static");
+            RetO.Add("Test"); RetO.Add("."); RetO.Add("NewType");
+
+            expectedProgramClass = new ProgramClass("ClassName", empty, empty);
+            expectedProgramFunction = new ProgramFunction(name, ModO, RetO, empty, empty, empty);
+
+            expectedProgramClass.ChildList.Add(expectedProgramFunction);
+            expectedClassTypeCollection.Add(expectedProgramClass);
+
+            codeProcessor.ProcessFileCode();
+
+            CollectionAssert.AreEqual(expectedClassTypeCollection, actualClassTypeCollection);
+
+            actualProgramClass = (ProgramClass)actualClassTypeCollection[0];
+
+            Assert.AreEqual(expectedProgramClass.ChildList.Count, actualProgramClass.ChildList.Count);
+
+            actualProgramFunction = (ProgramFunction)actualProgramClass.ChildList[0];
+
+            Assert.AreEqual(expectedProgramFunction.Name, actualProgramFunction.Name);
+            CollectionAssert.AreEqual(expectedProgramFunction.Modifiers, actualProgramFunction.Modifiers);
+            CollectionAssert.AreEqual(expectedProgramFunction.ReturnTypes, actualProgramFunction.ReturnTypes);
+            CollectionAssert.AreEqual(expectedProgramFunction.Generics, actualProgramFunction.Generics);
+            CollectionAssert.AreEqual(expectedProgramFunction.Parameters, actualProgramFunction.Parameters);
+        }
+
+        /*
         [TestMethod]
         public void TestFunctionSignature_O()
         {
@@ -460,7 +647,7 @@ namespace CodeAnalyzerTests
             CollectionAssert.AreEqual(RetO, FunO.ReturnTypes);
             CollectionAssert.AreEqual(empty, FunO.Generics);
             CollectionAssert.AreEqual(empty, FunO.Parameters);
-        }
+        }*/
     }
 
     [TestClass]

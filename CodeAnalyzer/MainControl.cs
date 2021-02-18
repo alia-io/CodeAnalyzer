@@ -100,9 +100,7 @@ namespace CodeAnalyzer
 
             /* 6: Collect relationship data for each class and interface */
             foreach (ProgramClassType programClassType in this.codeAnalysisData.ProgramClassTypes)
-            {
                 new RelationshipProcessor(programClassType, this.codeAnalysisData.ProgramClassTypes).ProcessRelationships();
-            }
 
             /* 7: Print the requested code analysis data to standard output and/or XML file */
             outputWriter.WriteOutput(this.codeAnalysisData.ProcessedFiles, this.inputSessionData.DirectoryPath, this.inputSessionData.FileType, this.inputSessionData.PrintToXml, this.inputSessionData.SetRelationshipData);
