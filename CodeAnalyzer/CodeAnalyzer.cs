@@ -112,11 +112,11 @@ namespace CodeAnalyzer
     }
 
     /* Processor of the file data (except relationship data), filling all internal Child ProgramType lists */
-    public class CodeProcessor
+    class CodeProcessor
     {
-        /* Saved references from input arguments */
         private ProgramClassTypeCollection programClassTypes;
         private ProgramFile programFile;
+        string fileType;
 
         /* Stacks to keep track of the current scope */
         private readonly Stack<string> scopeStack = new Stack<string>();
@@ -125,21 +125,13 @@ namespace CodeAnalyzer
         private readonly StringBuilder stringBuilder = new StringBuilder("");
 
         /* Scope syntax rules to check for */
-        int ifScope = 0;
-        int elseIfScope = 0;
-        int elseScope = 0;
-        int forScope = 0;
-        int forEachScope = 0;
-        int whileScope = 0;
-        int doWhileScope = 0;
-        int switchScope = 0;
+        List<CFScopeRule> activeRules = new List<CFScopeRule>();
 
-        int savedScopeStackCount = 0;
-
-        public CodeProcessor(ProgramFile programFile, ProgramClassTypeCollection programClassTypes)
+        public CodeProcessor(ProgramFile programFile, ProgramClassTypeCollection programClassTypes, string fileType)
         {
             this.programClassTypes = programClassTypes;
             this.programFile = programFile;
+            this.fileType = fileType;
         }
 
         /* Analyzes all of the code outside of a class or interface */
@@ -272,7 +264,7 @@ namespace CodeAnalyzer
             string entry;
 
             scopeStack.Push("namespace"); // Push the namespace scope opener onto scopeStack
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
 
             while (++index < programFile.FileTextData.Count) // Get the name of the namespace
             {
@@ -286,7 +278,7 @@ namespace CodeAnalyzer
             }
 
             ProgramNamespace programNamespace = new ProgramNamespace(stringBuilder.ToString());
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
 
             // Add new namespace to its parent's ChildList
             if (typeStack.Count > 0) typeStack.Peek().ChildList.Add(programNamespace);
@@ -331,7 +323,7 @@ namespace CodeAnalyzer
         private ProgramClass NewClass(string name, List<string> modifiers, List<string> generics)
         {
             ProgramClass programClass = new ProgramClass(name, modifiers, generics);
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
             return programClass;
         }
 
@@ -339,7 +331,7 @@ namespace CodeAnalyzer
         private ProgramInterface NewInterface(string name, List<string> modifiers, List<string> generics)
         {
             ProgramInterface programInterface = new ProgramInterface(name, modifiers, generics);
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
             return programInterface;
         }
 
@@ -347,7 +339,7 @@ namespace CodeAnalyzer
         private void NewFunction(string[] functionIdentifier, string name, List<string> modifiers, List<string> returnTypes, List<string> generics, List<string> parameters, List<string> baseParameters)
         {
             this.RemoveFunctionSignatureFromTextData(functionIdentifier.Length);
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
 
             ProgramFunction programFunction = new ProgramFunction(name, modifiers, returnTypes, generics, parameters, baseParameters);
 
@@ -376,7 +368,7 @@ namespace CodeAnalyzer
                 if (modifier.Length > 0) modifiers.Add(modifier);
 
             scopeStack.Push(type); // Push the type of scope opener (class or interface)
-            stringBuilder.Clear();
+            this.ClearCurrentItems();
 
             while (++index < programFile.FileTextData.Count) // Get the name of the class/interface
             {
@@ -446,14 +438,15 @@ namespace CodeAnalyzer
                 return true;
             }
             // If it failed normal function requirements, check rules for constructors and deconstructors
-            else if (this.CheckIfConstructor(functionIdentifier)) return true;
+            else if ((fileType.Equals("*.cs") || fileType.Equals("*.txt")) && this.CheckIfConstructor_cs(functionIdentifier)) return true;
+            else if (fileType.Equals("*.java") && this.CheckIfConstructor_java(functionIdentifier)) return true;
             else if (this.CheckIfDeconstructor(functionIdentifier)) return true;
 
             return false;
         }
 
-        /* Detects the syntax for a Constructor function */
-        private bool CheckIfConstructor(string[] functionIdentifier)
+        /* Detects the syntax for a C# Constructor function */
+        private bool CheckIfConstructor_cs(string[] functionIdentifier)
         {
             // The constructor requirement to check next. If this ends at 3 or 7, there is a new function. If this ends at -1, there is not a new function.
             int functionRequirement = 0;
@@ -479,7 +472,7 @@ namespace CodeAnalyzer
                 else if (text.Equals(".")) periods++;
 
                 // Test the current requirement
-                functionRequirement = this.TestConstructorRequirement(functionRequirement, text, ref modifiers, ref name, ref parameters, ref baseParameters, brackets, parentheses, periods);
+                functionRequirement = this.TestConstructorRequirement_cs(functionRequirement, text, ref modifiers, ref name, ref parameters, ref baseParameters, brackets, parentheses, periods);
 
                 if (periods > 0 && !text.Equals(".")) periods--;
                 else if (text.Equals("]") || text.Equals(">")) brackets--;
@@ -488,6 +481,50 @@ namespace CodeAnalyzer
             if (functionRequirement == 3 || functionRequirement == 7) // Constructor signature detected - create a new function
             {
                 this.NewFunction(functionIdentifier, name, modifiers, new List<string>(), new List<string>(), parameters, baseParameters);
+                return true;
+            }
+
+            return false;
+        }
+
+        /* Detects the syntax for a Java Constructor function */
+        private bool CheckIfConstructor_java(string[] functionIdentifier)
+        {
+            // The constructor requirement to check next. If this ends at ???, there is a new function. If this ends at -1, there is not a new function.
+            int functionRequirement = 0;
+
+            List<string> modifiers = new List<string>();
+            string name = "";
+            List<string> parameters = new List<string>();
+
+            // Ensure the same number of opening and closing parentheses/brackets
+            int parentheses = 0;
+            int squareBrackets = 0;
+            int angleBrackets = 0;
+            int periods = 0;
+
+            for (int i = 0; i < functionIdentifier.Length; i++)
+            {
+                string text = functionIdentifier[i];
+                if (text.Length < 1) continue;
+
+                if (text.Equals("(")) parentheses++;
+                else if (text.Equals("[")) squareBrackets++;
+                else if (text.Equals("<")) angleBrackets++;
+                else if (text.Equals(".")) periods++;
+
+                // Test the current requirement
+                functionRequirement = this.TestConstructorRequirement_java(functionRequirement, text, ref name, ref modifiers, ref parameters, squareBrackets, angleBrackets, parentheses, periods);
+
+                if (periods > 0 && !text.Equals(".")) periods--;
+                else if (text.Equals(")")) parentheses--;
+                else if (text.Equals("]")) squareBrackets--;
+                else if (text.Equals(">")) angleBrackets--;
+            }
+
+            if (functionRequirement == 4 || functionRequirement == 7) // Function signature detected - create a new function
+            {
+                this.NewFunction(functionIdentifier, name, modifiers, new List<string>(), new List<string>(), parameters, new List<string>());
                 return true;
             }
 
@@ -553,34 +590,55 @@ namespace CodeAnalyzer
             return functionRequirement;
         }
 
-        /* Tests each step of constructor function requirements */
-        private int TestConstructorRequirement(int functionRequirement, string text, ref List<string> modifiers, ref string name, ref List<string> parameters, ref List<string> baseParameters, int brackets, int parentheses, int periods)
+        /* Tests each step of C# constructor function requirements */
+        private int TestConstructorRequirement_cs(int functionRequirement, string text, ref List<string> modifiers, ref string name, ref List<string> parameters, ref List<string> baseParameters, int brackets, int parentheses, int periods)
         {
             switch (functionRequirement)
             {
                 case 0: // To pass: The name of function equals name of the class.
-                    functionRequirement = this.ConstructorStep0(text, ref name);
+                    functionRequirement = this.ConstructorStep0_cs(text, ref name);
                     break;
                 case 1: // To pass: Find opening parenthesis.
-                    functionRequirement = this.ConstructorStep1(text, ref modifiers, ref name, brackets, periods);
+                    functionRequirement = this.ConstructorStep1_cs(text, ref modifiers, ref name, brackets, periods);
                     break;
                 case 2: // To pass: Find closing parenthesis.
-                    functionRequirement = this.ConstructorStep2(text, ref parameters, parentheses);
+                    functionRequirement = this.ConstructorStep2_cs(text, ref parameters, parentheses);
                     break;
                 case 3: // To continue: Find colon.
-                    functionRequirement = this.ConstructorStep3(text, ref baseParameters);
+                    functionRequirement = this.ConstructorStep3_cs(text, ref baseParameters);
                     break;
                 case 4: // To pass: Find "base".
-                    functionRequirement = this.ConstructorStep4(text, ref baseParameters);
+                    functionRequirement = this.ConstructorStep4_cs(text, ref baseParameters);
                     break;
                 case 5: // To pass: Find opening parenthesis.
-                    functionRequirement = this.ConstructorStep5(text, ref baseParameters);
+                    functionRequirement = this.ConstructorStep5_cs(text, ref baseParameters);
                     break;
                 case 6: // To pass: Find closing parenthesis.
-                    functionRequirement = this.ConstructorStep6(text, ref baseParameters);
+                    functionRequirement = this.ConstructorStep6_cs(text, ref baseParameters);
                     break;
                 case 7: // To pass: Find no more text after closing parenthesis.
-                    functionRequirement = this.ConstructorStep7(text);
+                    functionRequirement = this.ConstructorStep7_cs(text);
+                    break;
+            }
+            return functionRequirement;
+        }
+
+        /* Tests each step of Java constructor function requirements */
+        private int TestConstructorRequirement_java(int functionRequirement, string text, ref string name, ref List<string> modifiers, ref List<string> parameters, int squareBrackets, int angleBrackets, int parentheses, int periods)
+        {
+            switch (functionRequirement)
+            {
+                case 0: // To pass: The name of function equals name of the class.
+                    functionRequirement = this.ConstructorStep0_java(text, ref name);
+                    break;
+                case 1: // To pass: Find opening parenthesis.
+                    functionRequirement = this.ConstructorStep1_java(text, ref name, ref modifiers, squareBrackets + angleBrackets, periods);
+                    break;
+                case 2: // To pass: Find opening parenthesis.
+                    functionRequirement = this.ConstructorStep2_java(text, ref parameters, parentheses);
+                    break;
+                case 3: // To pass: Find no more text after closing parenthesis.
+                    functionRequirement = this.ConstructorStep3_java(text);
                     break;
             }
             return functionRequirement;
@@ -712,7 +770,7 @@ namespace CodeAnalyzer
 
             if (text.Equals(")") && parentheses == 1)
                 return 4;
-            
+
             parameters.Add(text);
             return 3;
         }
@@ -770,23 +828,24 @@ namespace CodeAnalyzer
             if (text.Equals(" ")) return 7;
             return -1;
         }
-        
-        /* Tests step 0 of constructor syntax: The name of function equals name of the class (1 = success, -1 = fail) */
-        private int ConstructorStep0(string text, ref string name)
+
+        /* Tests step 0 of constructor syntax (C#): The name of function equals name of the class (1 = success, -1 = fail) */
+        private int ConstructorStep0_cs(string text, ref string name)
         {
             if (text.Equals(" ")) return 0;
 
             if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
             {
                 name = text;
-                return 1;
+                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction) && typeStack.Peek().Name.Equals(name))
+                    return 1;
             }
 
             return -1;
         }
 
-        /* Tests step 1 of constructor syntax: Find opening parenthesis (2 = success, -1 = fail) */
-        private int ConstructorStep1(string text, ref List<string> modifiers, ref string name, int brackets, int periods)
+        /* Tests step 1 of constructor syntax (C#): Find opening parenthesis (2 = success, -1 = fail) */
+        private int ConstructorStep1_cs(string text, ref List<string> modifiers, ref string name, int brackets, int periods)
         {
             if (text.Equals(" ")) return 1;
 
@@ -813,8 +872,8 @@ namespace CodeAnalyzer
             return -1;
         }
 
-        /* Tests step 2 of constructor syntax: Find closing parenthesis (-1 = fail) */
-        private int ConstructorStep2(string text, ref List<string> parameters, int parentheses)
+        /* Tests step 2 of constructor syntax (C#): Find closing parenthesis (-1 = fail) */
+        private int ConstructorStep2_cs(string text, ref List<string> parameters, int parentheses)
         {
             if (text.Equals(" ")) return 2;
 
@@ -825,8 +884,8 @@ namespace CodeAnalyzer
             return 2;
         }
 
-        /* Tests step 3 of constructor syntax: Find colon (4 = success) */
-        private int ConstructorStep3(string text, ref List<string> baseParameters)
+        /* Tests step 3 of constructor syntax (C#): Find colon (4 = success) */
+        private int ConstructorStep3_cs(string text, ref List<string> baseParameters)
         {
             if (text.Equals(" ")) return 3;
 
@@ -839,8 +898,8 @@ namespace CodeAnalyzer
             return -1;
         }
 
-        /* Tests step 4 of constructor syntax: Find "base" (5 = success, -1 = fail) */
-        private int ConstructorStep4(string text, ref List<string> baseParameters)
+        /* Tests step 4 of constructor syntax (C#): Find "base" (5 = success, -1 = fail) */
+        private int ConstructorStep4_cs(string text, ref List<string> baseParameters)
         {
             if (text.Equals(" ")) return 4;
 
@@ -853,8 +912,8 @@ namespace CodeAnalyzer
             return -1;
         }
 
-        /* Tests step 5 of constructor syntax: Find opening parenthesis (6 = success, -1 = fail) */
-        private int ConstructorStep5(string text, ref List<string> baseParameters)
+        /* Tests step 5 of constructor syntax (C#): Find opening parenthesis (6 = success, -1 = fail) */
+        private int ConstructorStep5_cs(string text, ref List<string> baseParameters)
         {
             if (text.Equals(" ")) return 5;
 
@@ -867,8 +926,8 @@ namespace CodeAnalyzer
             return -1;
         }
 
-        /* Tests step 6 of constructor syntax: Find closing parenthesis (7 = success) */
-        private int ConstructorStep6(string text, ref List<string> baseParameters)
+        /* Tests step 6 of constructor syntax (C#): Find closing parenthesis (7 = success) */
+        private int ConstructorStep6_cs(string text, ref List<string> baseParameters)
         {
             if (text.Equals(" ")) return 6;
 
@@ -882,10 +941,72 @@ namespace CodeAnalyzer
             return 6;
         }
 
-        /* Tests step 7 of constructor syntax: Find no more text after closing parenthesis (-1 = fail) */
-        private int ConstructorStep7(string text)
+        /* Tests step 7 of constructor syntax (C#): Find no more text after closing parenthesis (-1 = fail) */
+        private int ConstructorStep7_cs(string text)
         {
             if (text.Equals(" ")) return 7;
+            return -1;
+        }
+
+        /* Tests step 0 of constructor syntax (Java): The name of function equals name of the class (1 = success, -1 = fail) */
+        private int ConstructorStep0_java(string text, ref string name)
+        {
+            if (text.Equals(" ")) return 0;
+
+            if ((!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+            {
+                name = text;
+                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramFunction) && typeStack.Peek().Name.Equals(name))
+                    return 1;
+            }
+
+            return -1;
+        }
+
+        /* Tests step 2 of constructor syntax (Java): Find opening parenthesis (3 = success, -1 = fail) */
+        private int ConstructorStep1_java(string text, ref string name, ref List<string> modifiers, int brackets, int periods)
+        {
+            if (text.Equals(" ")) return 1;
+
+            if (text.Equals("("))
+            {
+                if (typeStack.Count > 0 && typeStack.Peek().GetType() == typeof(ProgramClass) && typeStack.Peek().Name.Equals(name))
+                    return 2;
+                return -1;
+            }
+
+            if (brackets == 0 && periods == 0 && (!Char.IsSymbol((char)text[0]) && !Char.IsPunctuation((char)text[0])) || ((char)text[0]).Equals('_'))
+            {
+                modifiers.Add(name);
+                name = text;
+                return 1;
+            }
+
+            if (brackets != 0 || periods != 0 || text.Equals(".") || text.Equals(">") || text.Equals("]"))
+            {
+                name += text;
+                return 1;
+            }
+
+            return -1;
+        }
+
+        /* Tests step 2 of constructor syntax (Java): Find closing parenthesis (3 = success) */
+        private int ConstructorStep2_java(string text, ref List<string> parameters, int parentheses)
+        {
+            if (text.Equals(" ")) return 2;
+
+            if (text.Equals(")") && parentheses == 1)
+                return 3;
+
+            parameters.Add(text);
+            return 2;
+        }
+
+        /* Tests step 3 of constructor syntax (Java): Find no more text after closing parenthesis (-1 = fail) */
+        private int ConstructorStep3_java(string text)
+        {
+            if (text.Equals(" ")) return 3;
             return -1;
         }
 
@@ -899,7 +1020,7 @@ namespace CodeAnalyzer
                 name = text;
                 return 1;
             }
-            
+
             return -1;
         }
 
@@ -913,7 +1034,7 @@ namespace CodeAnalyzer
                 name += text;
                 return 2;
             }
-            
+
             return -1;
         }
 
@@ -924,7 +1045,7 @@ namespace CodeAnalyzer
 
             if (text.Equals("("))
                 return 3;
-            
+
             return -1;
         }
 
@@ -935,7 +1056,7 @@ namespace CodeAnalyzer
 
             if (text.Equals(")"))
                 return 4;
-            
+
             return -1;
         }
 
@@ -949,293 +1070,25 @@ namespace CodeAnalyzer
         /* Check for control flow scope openers within functions: if, else if, else, for, for each, while, do while, switch */
         private bool CheckControlFlowScopes(string entry)
         {
+            CFScopeRule newRule;
             bool scopeOpener = false;
+            List<CFScopeRule> failedRules = new List<CFScopeRule>();
 
-            if (ifScope > 0 && this.CheckIfScope(entry)) scopeOpener = true;
-            if (elseIfScope > 0 && this.CheckElseIfScope(entry)) scopeOpener = true;
-            if (elseScope > 0 && this.CheckElseScope(entry)) scopeOpener = true;
-            if (forScope > 0 && this.CheckForScope(entry)) scopeOpener = true;
-            if (forEachScope > 0 && this.CheckForEachScope(entry)) scopeOpener = true;
-            if (whileScope > 0 && this.CheckWhileScope(entry)) scopeOpener = true;
-            if (doWhileScope > 0 && this.CheckDoWhileScope(entry)) scopeOpener = true;
-            if (switchScope > 0 && this.CheckSwitchScope(entry)) scopeOpener = true;
+            foreach (CFScopeRule rule in activeRules)
+                if (rule.IsPassed(entry, scopeStack.Count))
+                {
+                    ((ProgramFunction)typeStack.Peek()).Complexity++;
+                    scopeStack.Push(rule.GetScopeType());
+                    scopeOpener = true;
+                }
 
-            /* Recheck the scopes with no rules passed, because "entry" could be the first word inside a bracketless scope
-            * that was just opened. Need to check for the beginning of another scope directly after. */
+            if (scopeOpener) this.ClearCurrentItems();
+            else activeRules.RemoveAll(rule => rule.Complete);
 
-            if (ifScope == 0 && this.CheckIfScope(entry)) scopeOpener = true;
-            if (elseIfScope == 0 && this.CheckElseIfScope(entry)) scopeOpener = true;
-            if (elseScope == 0 && this.CheckElseScope(entry)) scopeOpener = true;
-            if (forScope == 0 && this.CheckForScope(entry)) scopeOpener = true;
-            if (forEachScope == 0 && this.CheckForEachScope(entry)) scopeOpener = true;
-            if (whileScope == 0 && this.CheckWhileScope(entry)) scopeOpener = true;
-            if (doWhileScope == 0 && this.CheckDoWhileScope(entry)) scopeOpener = true;
-            if (switchScope == 0 && this.CheckSwitchScope(entry)) scopeOpener = true;
+            newRule = CFScopeRuleFactory.GetRule(activeRules, entry, scopeStack.Count, fileType);
+            if (newRule != null) activeRules.Add(newRule);
 
             return scopeOpener;
-        }
-        
-        /* Tests rules for "if" statement syntax */
-        private bool CheckIfScope(string entry)
-        {
-            switch (ifScope)
-            {
-                case 0: // To pass: Find "if" and elseIfScope == 0.
-                    if (entry.Equals("if") && elseIfScope == 0)
-                    {
-                        ifScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) ifScope = 2;
-                    else ifScope = 0;
-                    break;
-                case 2: // To pass: Find at least one entry inside parentheses.
-                    ifScope = 3;
-                    break;
-                case 3: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count)
-                        ifScope = 4;
-                    break;
-                case 4: // Add new "if" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("if");
-                    stringBuilder.Clear();
-                    ifScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-        
-        /* Tests rules for "if else" statement syntax */
-        private bool CheckElseIfScope(string entry)
-        {
-            switch (elseIfScope)
-            {
-                case 0: // To pass: Find "else".
-                    if (entry.Equals("else"))
-                    {
-                        elseIfScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find "if".
-                    if (entry.Equals("if")) elseIfScope = 2;
-                    else elseIfScope = 0;
-                    break;
-                case 2: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) elseIfScope = 3;
-                    else elseIfScope = 0;
-                    break;
-                case 3: // To pass: Find at least one entry inside parentheses.
-                    elseIfScope = 4;
-                    break;
-                case 4: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) elseIfScope = 5;
-                    break;
-                case 5: // Add new "else if" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("else if");
-                    stringBuilder.Clear();
-                    elseIfScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "else" statement syntax */
-        private bool CheckElseScope(string entry)
-        {
-            switch (elseScope)
-            {
-                case 0: // To pass: Find "else".
-                    if (entry.Equals("else")) elseScope = 1;
-                    break;
-                case 1: // To pass: Anything except "if".
-                    if (entry.Equals("if"))
-                    {
-                        elseScope = 0;
-                        break;
-                    }
-                    // Add new "else" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("else");
-                    stringBuilder.Clear();
-                    elseScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "for" loop syntax */
-        private bool CheckForScope(string entry)
-        {
-            switch (forScope)
-            {
-                case 0: // To pass: Find "for".
-                    if (entry.Equals("for"))
-                    {
-                        forScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) forScope = 2;
-                    else forScope = 0;
-                    break;
-                case 2: // To pass: Find at least one entry.
-                    forScope = 3;
-                    break;
-                case 3: // To pass: Find semicolon.
-                    if (entry.Equals(";")) forScope = 4;
-                    break;
-                case 4: // To pass: Find at least one entry.
-                    forScope = 5;
-                    break;
-                case 5: // To pass: Find semicolon.
-                    if (entry.Equals(";")) forScope = 6;
-                    break;
-                case 6: // To pass: Find at least one entry.
-                    forScope = 7;
-                    break;
-                case 7: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forScope = 8;
-                    break;
-                case 8: // Add new "for" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("for");
-                    stringBuilder.Clear();
-                    forScope = 0; // Reset rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "foreach" loop syntax */
-        private bool CheckForEachScope(string entry)
-        {
-            switch (forEachScope)
-            {
-                case 0: // To pass: Find "foreach".
-                    if (entry.Equals("foreach"))
-                    {
-                        forEachScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) forEachScope = 2;
-                    else forEachScope = 0;
-                    break;
-                case 2: // To pass: Find at least one entry inside parentheses.
-                    forEachScope = 3;
-                    break;
-                case 3: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) forEachScope = 4;
-                    break;
-                case 4: // Add new "foreach" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("foreach");
-                    stringBuilder.Clear();
-                    forEachScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "while" loop syntax */
-        private bool CheckWhileScope(string entry)
-        {
-            switch (whileScope)
-            {
-                case 0: // To pass: Find "while".
-                    if (entry.Equals("while"))
-                    {
-                        whileScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) whileScope = 2;
-                    else whileScope = 0;
-                    break;
-                case 2: // To pass: Find at least one entry inside parentheses.
-                    whileScope = 3;
-                    break;
-                case 3: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) whileScope = 4;
-                    break;
-                case 4: // To pass: Anything except semicolon.
-                    if (entry.Equals(";"))
-                    {
-                        whileScope = 0;
-                        break;
-                    }
-                    // Add new "while" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("while");
-                    stringBuilder.Clear();
-                    whileScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "do while" loop syntax */
-        private bool CheckDoWhileScope(string entry)
-        {
-            switch (doWhileScope)
-            {
-                case 0: // To pass: Find "do".
-                    if (entry.Equals("do")) doWhileScope = 1;
-                    break;
-                case 1: // Add new "do while" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("do while");
-                    stringBuilder.Clear();
-                    doWhileScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
-        }
-
-        /* Tests rules for "switch" statement syntax */
-        private bool CheckSwitchScope(string entry)
-        {
-            switch (switchScope)
-            {
-                case 0: // To pass: Find "switch".
-                    if (entry.Equals("switch"))
-                    {
-                        switchScope = 1;
-                        savedScopeStackCount = scopeStack.Count;
-                    }
-                    break;
-                case 1: // To pass: Find opening parenthesis.
-                    if (entry.Equals("(")) switchScope = 2;
-                    else switchScope = 0;
-                    break;
-                case 2: // To pass: Find at least one entry inside parentheses.
-                    switchScope = 3;
-                    break;
-                case 3: // To pass: Find closing parenthesis.
-                    if (entry.Equals(")") && savedScopeStackCount == scopeStack.Count) switchScope = 4;
-                    break;
-                case 4: // To pass: Find opening bracket.
-                    if (!entry.Equals("{"))
-                    {
-                        switchScope = 0;
-                        break;
-                    }
-                    // Add new "switch" scope
-                    ((ProgramFunction)typeStack.Peek()).Complexity++;
-                    scopeStack.Push("switch");
-                    stringBuilder.Clear();
-                    switchScope = 0; // Reset the rule
-                    return true;
-            }
-            return false;
         }
 
         /* Maintains stacks when a bracketed scope ends; returns true if the type of scope is equal to scopeType */
@@ -1268,12 +1121,13 @@ namespace CodeAnalyzer
                 }
                 else // If ending at least one other named scope
                     while (scopeStack.Count > 0 && (scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
-                            || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while")
+                            || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("for each") || scopeStack.Peek().Equals("while")
                             || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch")))
                         scopeStack.Pop();
             }
 
-            stringBuilder.Clear();
+            activeRules.Clear();
+            this.ClearCurrentItems();
             return isScopeType;
         }
 
@@ -1281,10 +1135,10 @@ namespace CodeAnalyzer
         private bool EndBracketlessScope()
         {
             bool isFunction = false;
-            if (forScope == 0)
+            if (!activeRules.OfType<ForRule_CS>().Any())
             {
                 while (scopeStack.Count > 0 && scopeStack.Peek().Equals("if") || scopeStack.Peek().Equals("else if") || scopeStack.Peek().Equals("else")
-                    || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("foreach") || scopeStack.Peek().Equals("while")
+                    || scopeStack.Peek().Equals("for") || scopeStack.Peek().Equals("for each") || scopeStack.Peek().Equals("while")
                     || scopeStack.Peek().Equals("do while") || scopeStack.Peek().Equals("switch") || scopeStack.Peek().Equals("function"))
                 {
                     if (scopeStack.Peek().Equals("function"))
@@ -1299,8 +1153,8 @@ namespace CodeAnalyzer
                     }
                     scopeStack.Pop();
                 }
+                this.ClearCurrentItems();
             }
-            stringBuilder.Clear();
             return isFunction;
         }
 
@@ -1316,7 +1170,8 @@ namespace CodeAnalyzer
                     return true;
             }
 
-            if (entry.Equals(";")) // Check for the end of an existing bracketless scope
+            // Check for the end of an existing bracketless scope
+            if (entry.Equals(";"))
                 if (this.EndBracketlessScope()) // True if bracketless scope was a function
                 {
                     index++;
@@ -1351,7 +1206,7 @@ namespace CodeAnalyzer
         private void UpdateTextData(string entry)
         {
             if (typeStack.Count > 0 && (typeStack.Peek().GetType() == typeof(ProgramClass)
-                    || typeStack.Peek().GetType() == typeof(ProgramInterface) 
+                    || typeStack.Peek().GetType() == typeof(ProgramInterface)
                     || typeStack.Peek().GetType() == typeof(ProgramFunction)))
                 ((ProgramDataType)typeStack.Peek()).TextData.Add(entry);
         }
@@ -1440,6 +1295,12 @@ namespace CodeAnalyzer
                 if (stringBuilder.Length > 0) stringBuilder.Append(" ");
                 stringBuilder.Append(entry);
             }
+        }
+
+        private void ClearCurrentItems()
+        {
+            stringBuilder.Clear();
+            activeRules.Clear();
         }
     }
 

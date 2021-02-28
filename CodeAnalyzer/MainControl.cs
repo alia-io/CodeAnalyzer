@@ -94,7 +94,7 @@ namespace CodeAnalyzer
             while (this.inputSessionData.FileQueue.Count > 0)
             {
                 ProgramFile programFile = this.inputSessionData.FileQueue.Dequeue();
-                new CodeProcessor(programFile, this.codeAnalysisData.ProgramClassTypes).ProcessFileCode();
+                new CodeProcessor(programFile, this.codeAnalysisData.ProgramClassTypes, this.inputSessionData.FileType).ProcessFileCode();
                 this.codeAnalysisData.ProcessedFiles.Add(programFile);   // Add the file to the list of processed files
             }
 

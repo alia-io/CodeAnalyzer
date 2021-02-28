@@ -1,0 +1,85 @@
+<file name = "TestInputFile.cs">
+    <interface name = "IAnimalActions"></interface>
+    <interface name = "IHumanActions"></interface>
+    <class name = "Animal">
+        <function name = "Animal">
+            <size>3</size>
+            <complexity>0</complexity>
+        </function>
+        <function name = "Move">
+            <size>9</size>
+            <complexity>4</complexity>
+        </function>
+    </class>
+    <class name = "Pet">
+        <function name = "Pet">
+            <size>1</size>
+            <complexity>0</complexity>
+        </function>
+    </class>
+    <class name = "Dog">
+        <function name = "Dog">
+            <size>1</size>
+            <complexity>0</complexity>
+        </function>
+        <function name = "Talk">
+            <size>1</size>
+            <complexity>0</complexity>
+        </function>
+    </class>
+    <class name = "Human">
+        <function name = "Human">
+            <size>2</size>
+            <complexity>0</complexity>
+        </function>
+        <function name = "Talk">
+            <size>1</size>
+            <complexity>0</complexity>
+        </function>
+        <function name = "Move">
+            <size>11</size>
+            <complexity>5</complexity>
+        </function>
+        <function name = "GoToSchool">
+            <size>6</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "GraduateSchool">
+            <size>5</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "GoToWork">
+            <size>4</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "BuyPet">
+            <size>7</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "BuyDog">
+            <size>4</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "BuyCar">
+            <size>8</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "SellCar">
+            <size>5</size>
+            <complexity>1</complexity>
+        </function>
+        <function name = "FillCarFuelTank">
+            <size>8</size>
+            <complexity>2</complexity>
+        </function>
+    </class>
+    <class name = "Car">
+        <function name = "Car">
+            <size>5</size>
+            <complexity>0</complexity>
+        </function>
+        <function name = "FillTank">
+            <size>7</size>
+            <complexity>1</complexity>
+        </function>
+    </class>

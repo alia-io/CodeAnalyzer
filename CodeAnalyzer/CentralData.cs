@@ -60,7 +60,7 @@ namespace CodeAnalyzer
             if (input[2].Equals("/X"))
                 this.PrintToXml = true;
 
-            if (input[4].Equals("*.cs") || input[4].Equals("*.txt"))
+            if (input[4].Equals("*.cs") || input[4].Equals("*.java") || input[4].Equals("*.txt"))
                 this.FileType = input[4];
         }
 
@@ -69,7 +69,7 @@ namespace CodeAnalyzer
         {
             string[] filePaths;
 
-            if (this.FileType.Equals("*.cs") || this.FileType.Equals("*.txt"))
+            if (this.FileType.Equals("*.cs") || this.FileType.Equals("*.java") || this.FileType.Equals("*.txt"))
             {
                 if (this.IncludeSubdirectories)
                     filePaths = Directory.GetFiles(this.DirectoryPath, this.FileType, SearchOption.AllDirectories);

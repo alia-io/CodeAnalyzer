@@ -1,0 +1,53 @@
+<file name = "TestInputFile.cs">
+    <interface name = "IAnimalActions">
+        <inheritance_child>Dog</inheritance_child>
+        <inheritance_child>Human</inheritance_child>
+    </interface>
+    <interface name = "IHumanActions">
+        <inheritance_child>Human</inheritance_child>
+    </interface>
+    <class name = "Animal">
+        <inheritance_child>Pet</inheritance_child>
+        <inheritance_child>Human</inheritance_child>
+        <function name = "Animal"></function>
+        <function name = "Move"></function>
+    </class>
+    <class name = "Pet">
+        <inheritance_parent>Animal</inheritance_parent>
+        <inheritance_child>Dog</inheritance_child>
+        <aggregation_parent>Human</aggregation_parent>
+        <using_parent>Human</using_parent>
+        <function name = "Pet"></function>
+    </class>
+    <class name = "Dog">
+        <inheritance_parent>Pet</inheritance_parent>
+        <inheritance_parent>IAnimalActions</inheritance_parent>
+        <aggregation_parent>Human</aggregation_parent>
+        <function name = "Dog"></function>
+        <function name = "Talk"></function>
+    </class>
+    <class name = "Human">
+        <inheritance_parent>Animal</inheritance_parent>
+        <inheritance_parent>IAnimalActions</inheritance_parent>
+        <inheritance_parent>IHumanActions</inheritance_parent>
+        <aggregation_child>Car</aggregation_child>
+        <aggregation_child>Pet</aggregation_child>
+        <aggregation_child>Dog</aggregation_child>
+        <using_child>Pet</using_child>
+        <function name = "Human"></function>
+        <function name = "Talk"></function>
+        <function name = "Move"></function>
+        <function name = "GoToSchool"></function>
+        <function name = "GraduateSchool"></function>
+        <function name = "GoToWork"></function>
+        <function name = "BuyPet"></function>
+        <function name = "BuyDog"></function>
+        <function name = "BuyCar"></function>
+        <function name = "SellCar"></function>
+        <function name = "FillCarFuelTank"></function>
+    </class>
+    <class name = "Car">
+        <aggregation_parent>Human</aggregation_parent>
+        <function name = "Car"></function>
+        <function name = "FillTank"></function>
+    </class>

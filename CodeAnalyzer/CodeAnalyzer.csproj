@@ -48,6 +48,7 @@
     <Compile Include="MainControl.cs" />
     <Compile Include="CodeAnalyzer.cs" />
     <Compile Include="InputOutput.cs" />
+    <Compile Include="Rules.cs" />
     <Compile Include="TypeIdentifiers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

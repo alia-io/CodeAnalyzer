@@ -11,6 +11,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Xml.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
@@ -87,7 +88,7 @@ namespace CodeAnalyzer
                 return false;
             }
 
-            if (arg.ToLower().Equals("*.cs") || arg.ToLower().Equals("*.txt")) // Check for filetype
+            if (arg.ToLower().Equals("*.cs") || arg.ToLower().Equals("*.java") || arg.ToLower().Equals("*.txt")) // Check for filetype
             {
                 if (this.FormattedInput[4].Equals(""))
                 {
@@ -131,20 +132,23 @@ namespace CodeAnalyzer
         private List<string> Lines { get; }
         private StringBuilder line = new StringBuilder("");
         private int tabs = 0;
+        XDocument xml;
 
         public OutputWriter() => Lines = new List<string>();
 
         /* Route the files to the appropriate output writer */
         public void WriteOutput(List<ProgramFile> processedFileList, string directoryPath, string fileType, bool printToXML, bool printRelationships)
         {
+            if (printToXML) xml = new XDocument(new XElement("project"));
+
             foreach (ProgramFile file in processedFileList)
             {
                 if (printToXML)
                 {
                     if (printRelationships)
-                        this.WriteRelationshipsXML(file);
+                        this.WriteRelationshipsXML(xml.Root, file);
                     else
-                        this.WriteFunctionsXML(file);
+                        this.WriteFunctionsXML(xml.Root, file);
                 }
                 // Write to the console
                 Console.Write("\n");
@@ -228,81 +232,67 @@ namespace CodeAnalyzer
         }
 
         /* Adds lines to write function data to XML file */
-        private void WriteFunctionsXML(ProgramType programType)
+        private void WriteFunctionsXML(XElement parent, ProgramType programType)
         {
-            GetTabs(ref line);
+            XElement element = null;
 
-            // Find the type and open the new element
+            // Find the type and create the new element
             if (programType.GetType() == typeof(ProgramFile))
-                this.WriteProgramFile((ProgramFile)programType);
+                element = new XElement("file", new XAttribute("name", programType.Name));
 
             else if (programType.GetType() == typeof(ProgramNamespace))
-                this.WriteProgramNamespace((ProgramNamespace)programType);
+                element = new XElement("namespace", new XAttribute("name", programType.Name));
 
             else if (programType.GetType() == typeof(ProgramClass))
-                this.WriteProgramClass((ProgramClass)programType);
+                element = new XElement("class", new XAttribute("name", programType.Name));
 
             else if (programType.GetType() == typeof(ProgramInterface))
-                this.WriteProgramInterface((ProgramInterface)programType);
+                element = new XElement("interface", new XAttribute("name", programType.Name));
 
-            else if (programType.GetType() == typeof(ProgramFunction))
+            else if (programType.GetType() == typeof(ProgramFunction)) // Also add analysis data for functions
+                element = new XElement("function", new XAttribute("name", programType.Name),
+                                                    new XElement("size", ((ProgramFunction)programType).Size),
+                                                    new XElement("complexity", ((ProgramFunction)programType).Complexity));
+
+            if (element != null)
             {
-                this.WriteProgramFunction((ProgramFunction)programType);
-                // Also write analysis data for functions
-                this.WriteFunctionAnalysisData((ProgramFunction)programType);
+                parent.Add(element); // Add the element to its parent
+                foreach (ProgramType child in programType.ChildList) // Repeat recursively for each child
+                    WriteFunctionsXML(element, child);
             }
-
-            // Repeat recursively for each child
-            foreach (ProgramType child in programType.ChildList)
-                WriteFunctionsXML(child);
-
-            tabs--;
-            if (programType.ChildList.Count > 0 || programType.GetType() == typeof(ProgramFunction))
-                GetTabs(ref line);
-
-            this.WriteClosingTag(programType); // Close the element
         }
 
         /* Adds lines to write relationship data to XML file */
-        private void WriteRelationshipsXML(ProgramType programType)
+        private void WriteRelationshipsXML(XElement parent, ProgramType programType)
         {
-            GetTabs(ref line);
+            XElement element = null;
 
             // Find the type and open the new element
             if (programType.GetType() == typeof(ProgramFile))
-                this.WriteProgramFile((ProgramFile)programType);
+                element = new XElement("file", new XAttribute("name", programType.Name));
 
             else if (programType.GetType() == typeof(ProgramNamespace))
-                this.WriteProgramNamespace((ProgramNamespace)programType);
+                element = new XElement("namespace", new XAttribute("name", programType.Name));
 
             else if (programType.GetType() == typeof(ProgramClass))
             {
-                this.WriteProgramClass((ProgramClass)programType);
-                // Also write analysis data for classes
-                this.WriteClassAnalysisData((ProgramClass)programType);
+                element = new XElement("class", new XAttribute("name", programType.Name));
+                this.WriteClassAnalysisData((ProgramClass)programType, element); // Also add analysis data for classes
             }
             else if (programType.GetType() == typeof(ProgramInterface))
             {
-                this.WriteProgramInterface((ProgramInterface)programType);
-                // Also write analysis data for interfaces
-                this.WriteInterfaceAnalysisData((ProgramInterface)programType);
+                element = new XElement("interface", new XAttribute("name", programType.Name));
+                this.WriteInterfaceAnalysisData((ProgramInterface)programType, element); // Also add analysis data for interfaces
             }
             else if (programType.GetType() == typeof(ProgramFunction))
-                this.WriteProgramFunction((ProgramFunction)programType);
+                element = new XElement("function", new XAttribute("name", programType.Name));
 
-            // Repeat recursively for each child
-            foreach (ProgramType child in programType.ChildList)
-                WriteRelationshipsXML(child);
-
-            tabs--;
-            if (programType.ChildList.Count > 0
-                || (programType.GetType() == typeof(ProgramInterface) && (((ProgramInterface)programType).SubClasses.Count > 0 || ((ProgramInterface)programType).SuperClasses.Count > 0))
-                || (programType.GetType() == typeof(ProgramClass) && (((ProgramClass)programType).SubClasses.Count > 0 || ((ProgramClass)programType).SuperClasses.Count > 0
-                || ((ProgramClass)programType).OwnedByClasses.Count > 0 || ((ProgramClass)programType).OwnedClasses.Count > 0
-                || ((ProgramClass)programType).UsedByClasses.Count > 0 || ((ProgramClass)programType).UsedClasses.Count > 0)))
-                    GetTabs(ref line);
-
-            this.WriteClosingTag(programType); // Close the element
+            if (element != null)
+            {
+                parent.Add(element); // Add the element to its parent
+                foreach (ProgramType child in programType.ChildList) // Repeat recursively for each child
+                    WriteRelationshipsXML(element, child);
+            }
         }
 
         /* Prints file name to standard output */
@@ -338,51 +328,6 @@ namespace CodeAnalyzer
         private void PrintProgramFunction(ProgramFunction programFunction)
         {
             Console.Write("Function: " + programFunction.Name);
-            tabs++;
-        }
-
-        /* Adds XML file tag to line */
-        private void WriteProgramFile(ProgramFile programFile)
-        {
-            line.Append("<file name = \"");
-            line.Append(programFile.Name);
-            line.Append("\">");
-            tabs++;
-        }
-
-        /* Adds XML namespace tag to line */
-        private void WriteProgramNamespace(ProgramNamespace programNamespace)
-        {
-            line.Append("<namespace name = \"");
-            line.Append(programNamespace.Name);
-            line.Append("\">");
-            tabs++;
-        }
-
-        /* Adds XML class tag to line */
-        private void WriteProgramClass(ProgramClass programClass)
-        {
-            line.Append("<class name = \"");
-            line.Append(programClass.Name);
-            line.Append("\">");
-            tabs++;
-        }
-
-        /* Adds XML interface tag to line */
-        private void WriteProgramInterface(ProgramInterface programInterface)
-        {
-            line.Append("<interface name = \"");
-            line.Append(programInterface.Name);
-            line.Append("\">");
-            tabs++;
-        }
-
-        /* Adds XML function tag to line */
-        private void WriteProgramFunction(ProgramFunction programFunction)
-        {
-            line.Append("<function name = \"");
-            line.Append(programFunction.Name);
-            line.Append("\">");
             tabs++;
         }
 
@@ -485,103 +430,44 @@ namespace CodeAnalyzer
             }
         }
 
-        /* Adds XML tags for the function's size and complexity */
-        private void WriteFunctionAnalysisData(ProgramFunction programFunction)
-        {
-            GetTabs(ref line);
-            line.Append("<size>");
-            line.Append(programFunction.Size);
-            line.Append("</size>");
-
-            GetTabs(ref line);
-            line.Append("<complexity>");
-            line.Append(programFunction.Complexity);
-            line.Append("</complexity>");
-        }
-
         /* Adds XML tags for the class's relationship data */
-        private void WriteClassAnalysisData(ProgramClass programClass)
+        private void WriteClassAnalysisData(ProgramClass programClass, XElement element)
         {
-            this.WriteInheritanceData(programClass);
+            this.WriteInheritanceData(programClass, element);
 
             if (programClass.OwnedByClasses.Count > 0) // Aggregation, parents
                 foreach (ProgramClassType ownerclass in programClass.OwnedByClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<aggregation_parent>");
-                    line.Append(ownerclass.Name);
-                    line.Append("</aggregation_parent>");
-                }
+                    element.Add(new XElement("aggregation_parent", ownerclass.Name));
 
             if (programClass.OwnedClasses.Count > 0) // Aggregation, children
                 foreach (ProgramClassType ownedclass in programClass.OwnedClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<aggregation_child>");
-                    line.Append(ownedclass.Name);
-                    line.Append("</aggregation_child>");
-                }
+                    element.Add(new XElement("aggregation_child", ownedclass.Name));
 
             if (programClass.UsedByClasses.Count > 0) // Using, parents
                 foreach (ProgramClassType userclass in programClass.UsedByClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<using_parent>");
-                    line.Append(userclass.Name);
-                    line.Append("</using_parent>");
-                }
+                    element.Add(new XElement("using_parent", userclass.Name));
 
             if (programClass.UsedClasses.Count > 0) // Using, children
                 foreach (ProgramClassType usedclass in programClass.UsedClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<using_child>");
-                    line.Append(usedclass.Name);
-                    line.Append("</using_child>");
-                }
+                    element.Add(new XElement("using_child", usedclass.Name));
         }
 
         /* Adds XML tags for the interface's relationship data */
-        private void WriteInterfaceAnalysisData(ProgramInterface programInterface)
+        private void WriteInterfaceAnalysisData(ProgramInterface programInterface, XElement element)
         {
-            this.WriteInheritanceData(programInterface);
+            this.WriteInheritanceData(programInterface, element);
         }
 
         /* Adds XML tags of the inheritance information for a class or interface */
-        private void WriteInheritanceData(ProgramClassType programClassType)
+        private void WriteInheritanceData(ProgramClassType programClassType, XElement element)
         {
             if (programClassType.SuperClasses.Count > 0) // Inheritance, parents
                 foreach (ProgramClassType superclass in programClassType.SuperClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<inheritance_parent>");
-                    line.Append(superclass.Name);
-                    line.Append("</inheritance_parent>");
-                }
+                    element.Add(new XElement("inheritance_parent", superclass.Name));
 
             if (programClassType.SubClasses.Count > 0) // Inheritance, children
                 foreach (ProgramClassType subclass in programClassType.SubClasses)
-                {
-                    GetTabs(ref line);
-                    line.Append("<inheritance_child>");
-                    line.Append(subclass.Name);
-                    line.Append("</inheritance_child>");
-                }
-        }
-
-        /* Adds the type's closing tag */
-        private void WriteClosingTag(ProgramType programType)
-        {
-            if (programType.GetType() == typeof(ProgramFile))
-                line.Append("</file>");
-            else if (programType.GetType() == typeof(ProgramNamespace))
-                line.Append("</namespace>");
-            else if (programType.GetType() == typeof(ProgramClass))
-                line.Append("</class>");
-            else if (programType.GetType() == typeof(ProgramInterface))
-                line.Append("</interface>");
-            else if (programType.GetType() == typeof(ProgramFunction))
-                line.Append("</function>");
+                    element.Add(new XElement("inheritance_child", subclass.Name));
         }
 
         /* Sets the filename and filepath to the specified path for the new XML file */
@@ -589,27 +475,24 @@ namespace CodeAnalyzer
         {
             string fileName;
 
-            if (printRelationships)
-                fileName = directoryPath + "\\" + directoryName + "_relationships";
-            else
-                fileName = directoryPath + "\\" + directoryName + "_functions";
+            if (printRelationships) fileName = directoryPath + "\\" + directoryName + "_relationships";
+            else fileName = directoryPath + "\\" + directoryName + "_functions";
 
-            if (fileType.Equals("*.cs"))
-                fileName += ".cs";
-            else if (fileType.Equals("*.txt"))
-                fileName += ".txt";
+            if (fileType.Equals("*.cs")) fileName += ".cs";
+            else if (fileType.Equals("*.java")) fileName += ".java";
+            else if (fileType.Equals("*.txt")) fileName += ".txt";
 
             return fileName + ".xml";
         }
 
-        /* Writes all lines to the XML file */
+        /* Writes and saves the new XML file */
         private void WriteFile(string directoryPath, string directoryName, string fileType, bool printRelationships)
         {
             string filePath = this.NewFilePath(directoryPath, directoryName, fileType, printRelationships);
 
             try
             {
-                File.WriteAllLines(filePath, Lines.ToArray());
+                xml.Save(filePath);
                 if (printRelationships)
                     Console.WriteLine("\nRelationship analysis XML file written!\n");
                 else
@@ -628,19 +511,6 @@ namespace CodeAnalyzer
 
             for (int i = 0; i < tabs; i++)
                 Console.Write("    ");
-        }
-
-        /* Adds appropriate number of tabs for the current line to XML file text */
-        private void GetTabs(ref StringBuilder line)
-        {
-            if (line.Length > 0)
-            {
-                Lines.Add(line.ToString());
-                line.Clear();
-            }
-
-            for (int i = 0; i < tabs; i++)
-                line.Append("    ");
         }
     }
 }
